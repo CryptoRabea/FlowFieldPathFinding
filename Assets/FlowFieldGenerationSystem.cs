@@ -102,8 +102,8 @@ public partial struct FlowFieldGenerationSystem : ISystem
         };
         buildFlowJob.ScheduleParallel(gridSize, 64, state.Dependency).Complete();
 
-        // Update flow field data component
-        SystemAPI.SetSingleton(new FlowFieldData
+        // Update flow field data component on the flow field entity
+        state.EntityManager.SetComponentData(flowFieldEntity, new FlowFieldData
         {
             GridWidth = config.GridWidth,
             GridHeight = config.GridHeight,
@@ -130,11 +130,23 @@ public partial struct FlowFieldGenerationSystem : ISystem
             return query.GetSingletonEntity();
         }
 
-        // Create new entity with buffers
+        // Create new entity with buffers and FlowFieldData component
         var entity = state.EntityManager.CreateEntity();
         state.EntityManager.AddBuffer<FlowFieldCostBuffer>(entity);
         state.EntityManager.AddBuffer<FlowFieldIntegrationBuffer>(entity);
         state.EntityManager.AddBuffer<FlowFieldDirectionBuffer>(entity);
+
+        // Add FlowFieldData component (singleton)
+        state.EntityManager.AddComponentData(entity, new FlowFieldData
+        {
+            GridWidth = config.GridWidth,
+            GridHeight = config.GridHeight,
+            CellSize = config.CellSize,
+            GridOrigin = config.GridOrigin,
+            DestinationCell = int2.zero,
+            NeedsUpdate = false
+        });
+
         return entity;
     }
 

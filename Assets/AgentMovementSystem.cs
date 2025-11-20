@@ -46,17 +46,16 @@ public partial struct AgentMovementSystem : ISystem
     // OnUpdate cannot be Burst compiled - it uses QueryBuilder (managed operations)
     public void OnUpdate(ref SystemState state)
     {
-        var flowFieldData = SystemAPI.GetSingleton<FlowFieldData>();
-
-        // Get flow field buffers
+        // Get flow field entity and buffers
         var flowFieldQuery = SystemAPI.QueryBuilder()
-            .WithAll<FlowFieldDirectionBuffer>()
+            .WithAll<FlowFieldDirectionBuffer, FlowFieldData>()
             .Build();
 
         if (flowFieldQuery.IsEmpty)
             return;
 
         var flowFieldEntity = flowFieldQuery.GetSingletonEntity();
+        var flowFieldData = state.EntityManager.GetComponentData<FlowFieldData>(flowFieldEntity);
         var directionBuffer = SystemAPI.GetBuffer<FlowFieldDirectionBuffer>(flowFieldEntity);
 
         float deltaTime = SystemAPI.Time.DeltaTime;
