@@ -50,28 +50,24 @@ public class AgentRenderingBaker : Baker<AgentRenderingAuthoring>
         AddComponent<AgentPooled>(entity);
 
         // Add rendering components (Entities.Graphics)
-        // This enables GPU instancing automatically
-        var renderMeshDescription = new RenderMeshDescription
+        // For Entities.Graphics 1.4.16+, manually add components for GPU instancing
+
+        // Add the core rendering components
+        AddComponent(entity, new MaterialMeshInfo
         {
-            FilterSettings = RenderFilterSettings.Default,
-            LightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off
-        };
+            MeshID = RegisterMesh(authoring.mesh),
+            MaterialID = RegisterMaterial(authoring.material)
+        });
 
-        // Create RenderMeshArray with single material and mesh
-        var renderMeshArray = new RenderMeshArray(
-            new Material[] { authoring.material },
-            new Mesh[] { authoring.mesh }
-        );
-
-        // Create MaterialMeshInfo pointing to index 0 in the arrays
-        var materialMeshInfo = MaterialMeshInfo.FromRenderMeshArrayIndices(0, 0);
-
-        RenderMeshUtility.AddComponents(
-            entity,
-            this,
-            renderMeshDescription,
-            renderMeshArray,
-            materialMeshInfo
-        );
+        // Add RenderBounds for culling
+        var bounds = authoring.mesh != null ? authoring.mesh.bounds : new Bounds(Vector3.zero, Vector3.one);
+        AddComponent(entity, new RenderBounds
+        {
+            Value = new AABB
+            {
+                Center = bounds.center,
+                Extents = bounds.extents
+            }
+        });
     }
 }
