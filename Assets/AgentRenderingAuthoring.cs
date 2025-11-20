@@ -57,12 +57,21 @@ public class AgentRenderingBaker : Baker<AgentRenderingAuthoring>
             LightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off
         };
 
+        // Create RenderMeshArray with single material and mesh
+        var renderMeshArray = new RenderMeshArray(
+            new Material[] { authoring.material },
+            new Mesh[] { authoring.mesh }
+        );
+
+        // Create MaterialMeshInfo pointing to index 0 in the arrays
+        var materialMeshInfo = MaterialMeshInfo.FromRenderMeshArrayIndices(0, 0);
+
         RenderMeshUtility.AddComponents(
             entity,
             this,
             renderMeshDescription,
-            authoring.mesh,
-            authoring.material
+            renderMeshArray,
+            materialMeshInfo
         );
     }
 }
