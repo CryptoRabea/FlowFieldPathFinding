@@ -1,0 +1,95 @@
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+UserSettings/
+
+# VS / Rider
+.vscode/
+.idea/
+*.sln
+*.user
+*.pidb
+*.booproj
+
+# Auto-generated
+*.unityproj
+*.suo
+*.userprefs
+*.pidb.meta
+*.booproj.meta
+
+# Cache
+*.apk
+*.aab
+*.unitypackage
+*.DS_Store
+
+# Unity generated folders
+Sysroot/
+Snapshots/
+MemoryCaptures/
+
+# IDE
+.vscode/
+.idea/
+*.sln
+*.user
+*.pidb
+*.booproj
+
+# Packages & builds
+*.unitypackage
+*.apk
+*.aab
+*.zip
+*.rar
+*.7z
+*.Fbx
+*.shader
+*.png
+*.asset
+*.mat
+*.prefab
+*.jpg
+*.shaderGraph
+*.exr
+*.tga
+*.unity
+*.lighting
+*.terrainlayer
+*.controller
+*.vsconfig
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Excluded asset packs
+Assets/2D Casual UI/
+Assets/Palmov Island/
+Assets/Other Models/
+Assets/3D Cartoon Village/
+Assets/Materials/
+Assets/TextMesh pro/
+Assets/60 free icons pack/
+Assets/Medieval Buildings and Objects/
+Assets/StrategyGameResourceIcons/
+Assets/VanillaLoopStudio/
+
+
+.vs/
+Assets/Advance Studios/Medieval Castle/Art.meta
+*.meta
+*.anim
+*.wav
+*.pdf
+*.txt
+/Assets/ConstructableMedievalHouses
+*.meta
+/Assets/Polytope Studio
+/Assets/BigRookGames
+AGENTS.md
