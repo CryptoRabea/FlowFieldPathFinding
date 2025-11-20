@@ -17,18 +17,16 @@ using Unity.Transforms;
 // (wavefront expansion). For huge grids (>200x200), consider hierarchical approach.
 // ============================================================================
 
-[BurstCompile]
 [UpdateInGroup(typeof(InitializationSystemGroup))]
 public partial struct FlowFieldGenerationSystem : ISystem
 {
-    [BurstCompile]
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<FlowFieldConfig>();
         state.RequireForUpdate<FlowFieldTarget>();
     }
 
-    [BurstCompile]
+    // OnUpdate cannot be Burst compiled - it creates entities and queries (structural changes)
     public void OnUpdate(ref SystemState state)
     {
         // Only regenerate if target has changed
