@@ -73,17 +73,18 @@
     <Analyzer Include="D:\Work\UnityProjects\FlowFieldPathFinding\Library\PackageCache\com.unity.entities@42c4e852ffb4\Unity.Entities\SourceGenerators\Unity.Entities.Analyzer.CodeFixes.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\MinimapDragHandler.cs" />
-    <Compile Include="Assets\MinimapUnitMarkerManager.cs" />
-    <Compile Include="Assets\MinimapBuildingMarkerManager.cs" />
-    <Compile Include="Assets\RTSCameraController.cs" />
-    <Compile Include="Assets\MinimapMarkerPool.cs" />
-    <Compile Include="Assets\IMinimapEntity.cs" />
-    <Compile Include="Assets\MinimapEntityDetector.cs" />
-    <Compile Include="Assets\MinimapMarkerManager.cs" />
-    <Compile Include="Assets\MinimapEntity.cs" />
-    <Compile Include="Assets\MiniMapControllerPro.cs" />
-    <Compile Include="Assets\MinimapConfig.cs" />
+    <Compile Include="Assets\IComponentData.cs" />
+    <Compile Include="Assets\FlowFieldBootstrapAuthoring.cs" />
+    <Compile Include="Assets\UnitAuthoring.cs" />
+    <Compile Include="Assets\FlowFieldComponents.cs" />
+    <Compile Include="Assets\AgentSpawnerSystem.cs" />
+    <Compile Include="Assets\AgentComponents.cs" />
+    <Compile Include="Assets\AgentRenderingAuthoring.cs" />
+    <Compile Include="Assets\FlowFieldBootstrap.cs" />
+    <Compile Include="Assets\UnitSpawningSystem.cs" />
+    <Compile Include="Assets\AgentMovementSystem.cs" />
+    <Compile Include="Assets\FlowFieldGenerationSystem.cs" />
+    <Compile Include="Assets\PerformanceBenchmark.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
@@ -1138,12 +1139,12 @@
       <HintPath>Library\ScriptAssemblies\Unity.AI.Navigation.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.Entities.Graphics.Editor">
-      <HintPath>Library\ScriptAssemblies\Unity.Entities.Graphics.Editor.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Unity.EditorCoroutines.Editor">
       <HintPath>Library\ScriptAssemblies\Unity.EditorCoroutines.Editor.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Entities.Graphics.Editor">
+      <HintPath>Library\ScriptAssemblies\Unity.Entities.Graphics.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.RenderPipelines.Core.Runtime.Shared">
@@ -1366,12 +1367,12 @@
       <HintPath>Library\ScriptAssemblies\Unity.InternalAPIEngineBridge.007.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.Numerics.Random">
-      <HintPath>Library\ScriptAssemblies\Unity.Numerics.Random.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Unity.InternalAPIEditorBridge.007">
       <HintPath>Library\ScriptAssemblies\Unity.InternalAPIEditorBridge.007.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Numerics.Random">
+      <HintPath>Library\ScriptAssemblies\Unity.Numerics.Random.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.Collections">
