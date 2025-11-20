@@ -20,14 +20,20 @@ using UnityEngine;
 
 public class AgentRenderingAuthoring : MonoBehaviour
 {
-    [Header("Rendering")]
-    public Mesh mesh;
-    public Material material;
-
     [Header("Agent Properties")]
+    [Tooltip("Movement speed in units per second")]
     public float speed = 5.0f;
+
+    [Tooltip("How strongly agents avoid each other (0-1)")]
     public float avoidanceWeight = 0.5f;
+
+    [Tooltip("How strongly agents follow flow field (0-1)")]
     public float flowFollowWeight = 1.0f;
+
+    [Header("Rendering Setup")]
+    [Tooltip("This GameObject must have MeshRenderer and MeshFilter components. " +
+             "Entities.Graphics will automatically convert them for GPU instancing.")]
+    public bool _renderingInfo = false;
 }
 
 public class AgentRenderingBaker : Baker<AgentRenderingAuthoring>
@@ -49,25 +55,8 @@ public class AgentRenderingBaker : Baker<AgentRenderingAuthoring>
         AddComponent<AgentActive>(entity);
         AddComponent<AgentPooled>(entity);
 
-        // Add rendering components (Entities.Graphics)
-        // For Entities.Graphics 1.4.16+, manually add components for GPU instancing
-
-        // Add the core rendering components
-        AddComponent(entity, new MaterialMeshInfo
-        {
-            MeshID = RegisterMesh(authoring.mesh),
-            MaterialID = RegisterMaterial(authoring.material)
-        });
-
-        // Add RenderBounds for culling
-        var bounds = authoring.mesh != null ? authoring.mesh.bounds : new Bounds(Vector3.zero, Vector3.one);
-        AddComponent(entity, new RenderBounds
-        {
-            Value = new AABB
-            {
-                Center = bounds.center,
-                Extents = bounds.extents
-            }
-        });
+        // Rendering is handled automatically by Entities.Graphics
+        // The GameObject MUST have MeshRenderer and MeshFilter components
+        // Entities.Graphics will bake them into ECS rendering components with GPU instancing
     }
 }
