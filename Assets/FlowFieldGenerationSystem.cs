@@ -102,8 +102,8 @@ public partial struct FlowFieldGenerationSystem : ISystem
         };
         buildFlowJob.ScheduleParallel(gridSize, 64, state.Dependency).Complete();
 
-        // Update flow field data component
-        SystemAPI.SetSingleton(new FlowFieldData
+        // Update flow field data component on the flow field entity
+        state.EntityManager.SetComponentData(flowFieldEntity, new FlowFieldData
         {
             GridWidth = config.GridWidth,
             GridHeight = config.GridHeight,
