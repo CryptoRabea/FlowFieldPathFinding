@@ -80,17 +80,19 @@ Assets/
    - `PerformanceBenchmark.cs` (optional)
 
 ### 3.6 Create Agent Prefab
-1. **GameObject → 3D Object → Cube**
+1. **GameObject → 3D Object → Cube** (this automatically has MeshRenderer and MeshFilter)
 2. Scale: `(0.5, 1, 0.5)` for character-sized agent
-3. Add component: `AgentRenderingAuthoring.cs`
-4. Configure in Inspector:
-   - **Mesh**: Cube (default)
-   - **Material**: Create new material (URP Lit or Standard)
+3. (Optional) Adjust material: Select the cube's MeshRenderer and assign a colored material
+4. Add component: `AgentRenderingAuthoring.cs`
+5. Configure in Inspector:
    - **Speed**: `5.0`
    - **Avoidance Weight**: `0.5`
    - **Flow Follow Weight**: `1.0`
-5. **Drag to Project → Prefabs/** to create prefab
-6. Delete from scene
+6. **Important**: The cube must keep its MeshRenderer and MeshFilter components (already present)
+7. **Drag to Project → Prefabs/** to create prefab
+8. Delete from scene
+
+**Note**: Entities.Graphics automatically converts MeshRenderer/MeshFilter to ECS rendering components with GPU instancing.
 
 ### 3.7 Configure Bootstrap
 Select `FlowFieldManager` GameObject and configure `FlowFieldBootstrap`:
