@@ -59,14 +59,13 @@ public struct AgentSpawnerState : IComponentData
 /// </summary>
 public struct AgentPooled : IComponentData { }
 
-[BurstCompile]
 [UpdateInGroup(typeof(InitializationSystemGroup))]
 public partial struct AgentSpawnerSystem : ISystem
 {
     private EntityQuery _pooledAgentsQuery;
     private EntityQuery _activeAgentsQuery;
 
-    [BurstCompile]
+    // OnCreate cannot be Burst compiled - it creates EntityQueries (managed operations)
     public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<AgentSpawnerConfig>();

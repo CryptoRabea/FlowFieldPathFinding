@@ -22,14 +22,13 @@ using Unity.Transforms;
 // Expected performance: 10k agents @ ~3-5ms on 4-core CPU
 // ============================================================================
 
-[BurstCompile]
 [UpdateInGroup(typeof(SimulationSystemGroup))]
 [UpdateAfter(typeof(FlowFieldGenerationSystem))]
 public partial struct AgentMovementSystem : ISystem
 {
     private EntityQuery _activeAgentsQuery;
 
-    [BurstCompile]
+    // OnCreate cannot be Burst compiled - it creates EntityQueries (managed operations)
     public void OnCreate(ref SystemState state)
     {
         _activeAgentsQuery = state.GetEntityQuery(
@@ -44,7 +43,7 @@ public partial struct AgentMovementSystem : ISystem
         state.RequireForUpdate(_activeAgentsQuery);
     }
 
-    [BurstCompile]
+    // OnUpdate cannot be Burst compiled - it uses QueryBuilder (managed operations)
     public void OnUpdate(ref SystemState state)
     {
         var flowFieldData = SystemAPI.GetSingleton<FlowFieldData>();
