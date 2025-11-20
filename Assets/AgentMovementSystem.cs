@@ -15,7 +15,7 @@ using Unity.Transforms;
 //
 // Performance optimizations:
 // - IJobChunk for optimal cache coherency (processes entities in archetype chunks)
-// - Spatial hashing (NativeMultiHashMap) for O(1) neighbor lookups
+// - Spatial hashing (NativeParallelMultiHashMap) for O(1) neighbor lookups
 // - Burst compilation for SIMD and optimized code generation
 // - Separate jobs for parallel execution: UpdateCellIndex -> CalculateVelocity -> ApplyMovement
 //
@@ -68,7 +68,7 @@ public partial struct AgentMovementSystem : ISystem
 
         // Create spatial hash for neighbor detection
         // Cell size = avoidance radius for efficient lookups
-        var spatialHash = new NativeMultiHashMap<int, SpatialHashEntry>(agentCount, Allocator.TempJob);
+        var spatialHash = new NativeParallelMultiHashMap<int, SpatialHashEntry>(agentCount, Allocator.TempJob);
 
         // Job 1: Update cell indices and populate spatial hash
         var updateCellJob = new UpdateCellIndexJob
@@ -119,7 +119,7 @@ struct SpatialHashEntry
 partial struct UpdateCellIndexJob : IJobEntity
 {
     [ReadOnly] public FlowFieldData FlowFieldData;
-    public NativeMultiHashMap<int, SpatialHashEntry>.ParallelWriter SpatialHash;
+    public NativeParallelMultiHashMap<int, SpatialHashEntry>.ParallelWriter SpatialHash;
     public float SpatialCellSize;
 
     public void Execute(Entity entity, in LocalTransform transform, ref AgentCellIndex cellIndex)
@@ -164,7 +164,7 @@ partial struct CalculateVelocityJob : IJobEntity
 {
     [ReadOnly] public FlowFieldData FlowFieldData;
     [ReadOnly] public NativeArray<FlowFieldDirectionBuffer> DirectionBuffer;
-    [ReadOnly] public NativeMultiHashMap<int, SpatialHashEntry> SpatialHash;
+    [ReadOnly] public NativeParallelMultiHashMap<int, SpatialHashEntry> SpatialHash;
     public float SpatialCellSize;
     public float AvoidanceRadius;
     public float DeltaTime;
