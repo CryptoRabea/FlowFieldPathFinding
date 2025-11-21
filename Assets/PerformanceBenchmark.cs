@@ -77,7 +77,7 @@ namespace FlowFieldPathfinding
 
         private void Start()
         {
-            _entityManager = World.DefaultGlobalSystemGroup.World.EntityManager;
+            _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             _bootstrap = FindObjectOfType<FlowFieldBootstrap>();
 
             if (_bootstrap == null)
