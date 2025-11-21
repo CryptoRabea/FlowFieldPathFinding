@@ -46,7 +46,7 @@ namespace FlowFieldPathfinding
 
         private void Start()
         {
-            _entityManager = World.DefaultGlobalSystemGroup.World.EntityManager;
+            _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             _lastTargetPosition = targetPosition;
 
             // Set initial target
@@ -204,8 +204,9 @@ namespace FlowFieldPathfinding
             if (targetQuery.TryGetSingleton<FlowFieldTarget>(out var target))
             {
                 Gizmos.color = Color.red;
-                Gizmos.DrawWireSphere(target.Position, 3f);
-                Gizmos.DrawLine(target.Position, target.Position + Vector3.up * 5f);
+                Vector3 targetPos = target.Position;
+                Gizmos.DrawWireSphere(targetPos, 3f);
+                Gizmos.DrawLine(targetPos, targetPos + Vector3.up * 5f);
             }
 
             // Draw grid bounds
