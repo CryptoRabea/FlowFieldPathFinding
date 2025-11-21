@@ -17,6 +17,7 @@ namespace FlowFieldPathfinding
         private bool _initialized;
         private Unity.Mathematics.Random _random;
         private Entity _prefabEntity;
+        private float _prefabScale;
 
         protected override void OnCreate()
         {
@@ -32,6 +33,9 @@ namespace FlowFieldPathfinding
             if (!_initialized)
             {
                 _prefabEntity = SystemAPI.GetSingleton<AgentPrefabReference>().Prefab;
+                // Capture the prefab's scale to preserve it during spawning
+                var prefabTransform = EntityManager.GetComponentData<LocalTransform>(_prefabEntity);
+                _prefabScale = prefabTransform.Scale;
                 _initialized = true;
 
                 if (config.InitialSpawnCount > 0)
@@ -59,7 +63,8 @@ namespace FlowFieldPathfinding
                 float2 randomOffset = _random.NextFloat2Direction() * _random.NextFloat(0f, config.SpawnRadius);
                 float3 spawnPosition = config.SpawnCenter + new float3(randomOffset.x, 0, randomOffset.y);
 
-                EntityManager.SetComponentData(entity, LocalTransform.FromPosition(spawnPosition));
+                EntityManager.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
+                    spawnPosition, quaternion.identity, _prefabScale));
                 EntityManager.SetComponentData(entity, new AgentVelocity { Value = float3.zero });
                 EntityManager.SetComponentData(entity, new AgentCellIndex { Value = -1 });
                 EntityManager.SetComponentData(entity, new Agent
