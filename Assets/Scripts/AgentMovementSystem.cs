@@ -28,8 +28,9 @@ namespace FlowFieldPathfinding
     public partial struct AgentMovementSystem : ISystem
     {
         private Entity _flowFieldEntity;
-        private const float AVOIDANCE_RADIUS = 2.0f;
-        private const float SPATIAL_CELL_SIZE = 2.0f; // Same as avoidance radius for optimal hashing
+        private const float AVOIDANCE_RADIUS = 1.5f;  // Smaller for tighter zombie packing
+        private const float COHESION_RADIUS = 5.0f;   // Larger radius for swarm grouping
+        private const float SPATIAL_CELL_SIZE = 5.0f; // Match cohesion radius for optimal hashing
 
         public void OnCreate(ref SystemState state)
         {
@@ -82,7 +83,7 @@ namespace FlowFieldPathfinding
 
             var cellHandle = updateCellJob.ScheduleParallel(state.Dependency);
 
-            // Job 2: Calculate velocities (flow field + avoidance)
+            // Job 2: Calculate velocities (flow field + zombie swarm behavior)
             var calculateVelocityJob = new CalculateVelocityJob
             {
                 DeltaTime = deltaTime,
@@ -91,6 +92,7 @@ namespace FlowFieldPathfinding
                 DirectionBuffer = directionBuffer.AsNativeArray(),
                 SpatialHash = spatialHash,
                 AvoidanceRadius = AVOIDANCE_RADIUS,
+                CohesionRadius = COHESION_RADIUS,
                 SpatialCellSize = SPATIAL_CELL_SIZE
             };
 
@@ -171,7 +173,7 @@ namespace FlowFieldPathfinding
         }
 
         /// <summary>
-        /// Job 2: Calculate desired velocity from flow field and local avoidance.
+        /// Job 2: Calculate desired velocity from flow field, separation, and cohesion (zombie swarm).
         /// Runs in parallel for all active agents.
         /// </summary>
         [BurstCompile]
@@ -185,6 +187,7 @@ namespace FlowFieldPathfinding
             [ReadOnly] public NativeParallelMultiHashMap<int, SpatialHashEntry> SpatialHash;
 
             public float AvoidanceRadius;
+            public float CohesionRadius;
             public float SpatialCellSize;
 
             public void Execute(
@@ -207,16 +210,17 @@ namespace FlowFieldPathfinding
                 // Convert 2D flow to 3D (XZ plane)
                 float3 flowDirection3D = new float3(flowDirection2D.x, 0, flowDirection2D.y);
 
-                // Calculate separation from nearby agents (spatial hash lookup)
-                float3 separation = CalculateSeparation(entity, position);
+                // Calculate separation and cohesion from nearby agents (zombie swarm behavior)
+                CalculateFlockingForces(entity, position, out float3 separation, out float3 cohesion);
 
-                // Blend flow following and avoidance
+                // Blend all behaviors: flow following + separation + cohesion (zombie swarm)
                 float3 desiredVelocity =
                     flowDirection3D * agent.FlowFollowWeight * agent.Speed +
-                    separation * agent.AvoidanceWeight * agent.Speed;
+                    separation * agent.AvoidanceWeight * agent.Speed +
+                    cohesion * agent.CohesionWeight * agent.Speed;
 
-                // Smooth velocity change (damping)
-                float3 newVelocity = math.lerp(velocity.Value, desiredVelocity, DeltaTime * 5.0f);
+                // Smooth velocity change (slower for zombie shamble effect)
+                float3 newVelocity = math.lerp(velocity.Value, desiredVelocity, DeltaTime * 3.0f);
 
                 // Clamp to max speed
                 float speed = math.length(newVelocity);
@@ -229,19 +233,24 @@ namespace FlowFieldPathfinding
             }
 
             /// <summary>
-            /// Calculate separation force from nearby agents using spatial hashing.
-            /// Checks 9 spatial cells (3x3 neighborhood) for O(1) neighbor lookups.
+            /// Calculate separation and cohesion forces for zombie swarm behavior.
+            /// Separation: push away from very close neighbors (prevents overlap)
+            /// Cohesion: pull toward center of nearby group (creates swarm clumping)
             /// </summary>
-            private float3 CalculateSeparation(Entity entity, float3 position)
+            private void CalculateFlockingForces(Entity entity, float3 position, out float3 separation, out float3 cohesion)
             {
-                float3 separation = float3.zero;
-                int neighborCount = 0;
+                separation = float3.zero;
+                cohesion = float3.zero;
+                float3 centerOfMass = float3.zero;
+                int separationCount = 0;
+                int cohesionCount = 0;
 
                 // Get spatial hash cell
                 int hashX = (int)math.floor(position.x / SpatialCellSize);
                 int hashY = (int)math.floor(position.z / SpatialCellSize);
 
                 float avoidanceRadiusSq = AvoidanceRadius * AvoidanceRadius;
+                float cohesionRadiusSq = CohesionRadius * CohesionRadius;
 
                 // Check 3x3 neighborhood (9 cells)
                 for (int dy = -1; dy <= 1; dy++)
@@ -262,16 +271,21 @@ namespace FlowFieldPathfinding
                                 float3 toNeighbor = position - neighbor.Position;
                                 float distanceSq = math.lengthsq(toNeighbor);
 
-                                // Check if within avoidance radius
+                                // Separation: push away from very close neighbors
                                 if (distanceSq < avoidanceRadiusSq && distanceSq > 0.01f)
                                 {
                                     float distance = math.sqrt(distanceSq);
                                     float3 direction = toNeighbor / distance;
-
-                                    // Stronger separation for closer agents
                                     float separationStrength = 1.0f - (distance / AvoidanceRadius);
                                     separation += direction * separationStrength;
-                                    neighborCount++;
+                                    separationCount++;
+                                }
+
+                                // Cohesion: accumulate positions for center of mass
+                                if (distanceSq < cohesionRadiusSq && distanceSq > 0.01f)
+                                {
+                                    centerOfMass += neighbor.Position;
+                                    cohesionCount++;
                                 }
 
                             } while (SpatialHash.TryGetNextValue(out neighbor, ref iterator));
@@ -280,12 +294,22 @@ namespace FlowFieldPathfinding
                 }
 
                 // Average separation force
-                if (neighborCount > 0)
+                if (separationCount > 0)
                 {
-                    separation /= neighborCount;
+                    separation /= separationCount;
                 }
 
-                return separation;
+                // Cohesion: move toward center of nearby group
+                if (cohesionCount > 0)
+                {
+                    centerOfMass /= cohesionCount;
+                    float3 toCenter = centerOfMass - position;
+                    float distToCenter = math.length(toCenter);
+                    if (distToCenter > 0.1f)
+                    {
+                        cohesion = math.normalize(toCenter);
+                    }
+                }
             }
 
             private static int HashPosition(int x, int y)

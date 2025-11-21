@@ -30,6 +30,10 @@ namespace FlowFieldPathfinding
         [Range(0f, 1f)]
         public float flowFollowWeight = 1.0f;
 
+        [Tooltip("Weight for cohesion/grouping. Higher = stronger swarm clumping (zombie behavior)")]
+        [Range(0f, 1f)]
+        public float cohesionWeight = 0.3f;
+
         private class Baker : Baker<AgentRenderingAuthoring>
         {
             public override void Bake(AgentRenderingAuthoring authoring)
@@ -41,7 +45,8 @@ namespace FlowFieldPathfinding
                 {
                     Speed = authoring.speed,
                     AvoidanceWeight = authoring.avoidanceWeight,
-                    FlowFollowWeight = authoring.flowFollowWeight
+                    FlowFollowWeight = authoring.flowFollowWeight,
+                    CohesionWeight = authoring.cohesionWeight
                 });
 
                 // Add velocity component (initialized to zero)

@@ -54,6 +54,10 @@ namespace FlowFieldPathfinding
         {
             public override void Bake(AgentPhysicsAuthoring authoring)
             {
+                // Skip if there's already a Rigidbody (Unity's RigidbodyBaker will handle physics)
+                if (GetComponent<Rigidbody>() != null)
+                    return;
+
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
 
                 // Create collision filter

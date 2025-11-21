@@ -71,7 +71,8 @@ namespace FlowFieldPathfinding
                 {
                     Speed = config.DefaultSpeed,
                     AvoidanceWeight = config.DefaultAvoidanceWeight,
-                    FlowFollowWeight = config.DefaultFlowFollowWeight
+                    FlowFollowWeight = config.DefaultFlowFollowWeight,
+                    CohesionWeight = config.DefaultCohesionWeight
                 });
             }
 

@@ -142,6 +142,9 @@ namespace FlowFieldPathfinding
         /// <summary>Default flow follow weight</summary>
         public float DefaultFlowFollowWeight;
 
+        /// <summary>Default cohesion weight for zombie swarming</summary>
+        public float DefaultCohesionWeight;
+
         /// <summary>Flag to request spawning</summary>
         public bool SpawnRequested;
 
