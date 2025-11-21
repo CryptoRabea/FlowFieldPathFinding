@@ -36,9 +36,8 @@ The project already includes these packages (see `Packages/manifest.json`):
 | **Component** | **Defined In** | **Attach To** | **Purpose** | **Creates** |
 |--------------|---------------|--------------|------------|-----------|
 | `FlowFieldConfigAuthoring` | `FlowFieldBootstrapAuthoring.cs` | Empty GameObject (scene) | Grid settings, target position | `FlowFieldConfig` + `FlowFieldTarget` singletons |
-| `AgentSpawnerConfigAuthoring` | `FlowFieldBootstrapAuthoring.cs` | Empty GameObject (scene) | Pool size, spawn settings | `AgentSpawnerConfig` singleton |
+| `AgentSpawnerConfigAuthoring` | `FlowFieldBootstrapAuthoring.cs` | Empty GameObject (scene) | Pool size, spawn settings, agent rendering | `AgentSpawnerConfig` singleton + pooled agent entities |
 | `FlowFieldObstacleAuthoring` | `FlowFieldBootstrapAuthoring.cs` | Obstacle GameObject (scene) | Mark as impassable | Entity with `FlowFieldObstacle` |
-| `AgentRenderingAuthoring` | `AgentRenderingAuthoring.cs` | Agent prefab (NOT in scene) | Agent template | Entity with `Agent`, `AgentActive`, etc. |
 | `FlowFieldBootstrap` | `FlowFieldBootstrap.cs` | Empty GameObject (optional) | Runtime control & debug UI | N/A (MonoBehaviour) |
 
 ---
@@ -56,12 +55,10 @@ Unity's new Baking system converts GameObjects into ECS entities:
 **Singleton Entities (Scene):**
 - `FlowFieldConfigAuthoring` → Bakes into `FlowFieldConfig` + `FlowFieldTarget`
 - `AgentSpawnerConfigAuthoring` → Bakes into `AgentSpawnerConfig`
+  - `AgentSpawnerSystem` creates pooled agent entities with rendering components programmatically
 
 **Obstacle Entities (Scene):**
 - `FlowFieldObstacleAuthoring` → Bakes into entities with `FlowFieldObstacle`
-
-**Prefab Entities (Template):**
-- `AgentRenderingAuthoring` → Bakes prefab into ECS agent template
 
 **Runtime Controller (Optional):**
 - `FlowFieldBootstrap` - MonoBehaviour for testing/debugging (not baked)
@@ -119,25 +116,9 @@ Unity's new Baking system converts GameObjects into ECS entities:
    - **Default Avoidance Weight**: `0.5`
    - **Default Flow Follow Weight**: `1.0`
 
-**What this does:** Creates a singleton entity (`AgentSpawnerConfig`) that controls the agent pool.
+**What this does:** Creates a singleton entity (`AgentSpawnerConfig`) that controls the agent pool. The spawner creates agents with rendering components programmatically (no prefab needed).
 
-### 4.7 Create Agent Prefab (NOT in scene)
-1. **GameObject → 3D Object → Cube**
-2. Scale: `(0.5, 1, 0.5)` for character-sized agent
-3. **Add Component → AgentRenderingAuthoring**
-4. Configure in Inspector (optional, uses spawner defaults):
-   - **Speed**: `5.0`
-   - **Avoidance Weight**: `0.5`
-   - **Flow Follow Weight**: `1.0`
-5. **Create Prefab:**
-   - **Drag cube to Project window** → Save as `AgentPrefab.prefab`
-   - **Delete cube from scene** (prefab will be instantiated by spawner)
-
-**What this does:** The Baker converts the GameObject into an ECS entity template with all required components. The AgentSpawnerSystem will instantiate these entities into the pool at runtime.
-
-**Note**: Entities.Graphics automatically converts MeshRenderer/MeshFilter to ECS rendering with GPU instancing.
-
-### 4.8 Setup Runtime Controller (Optional)
+### 4.7 Setup Runtime Controller (Optional)
 1. **GameObject → Create Empty**
 2. Name: `FlowFieldManager`
 3. **Add Component → FlowFieldBootstrap**
@@ -199,10 +180,8 @@ Unity's new **Baking system** (introduced in Entities 1.0+) replaces the old con
 **Singleton Entities (Scene Config):**
 - `FlowFieldConfigAuthoring` → Bakes into `FlowFieldConfig` + `FlowFieldTarget` singletons
 - `AgentSpawnerConfigAuthoring` → Bakes into `AgentSpawnerConfig` singleton
+  - At runtime, `AgentSpawnerSystem` creates pooled entities with all agent components + rendering
 - `FlowFieldObstacleAuthoring` → Bakes into entities with `FlowFieldObstacle` component
-
-**Prefab Entities (Agent Template):**
-- `AgentRenderingAuthoring` → Bakes prefab into ECS entity with `Agent`, `AgentVelocity`, `AgentCellIndex`, `AgentActive`, `AgentPooled` components
 
 ### When Baking Happens
 - **Automatically:** When you modify authoring components in Editor
@@ -246,7 +225,6 @@ Unity's new **Baking system** (introduced in Entities 1.0+) replaces the old con
 In Edit mode, verify:
 - `FlowFieldConfig` GameObject has `FlowFieldConfigAuthoring` component
 - `AgentSpawnerConfig` GameObject has `AgentSpawnerConfigAuthoring` component
-- Agent prefab has `AgentRenderingAuthoring` component + MeshRenderer + MeshFilter
 
 ### ✓ Systems Running
 In Play mode, open **Window → Entities → Systems** and verify:
@@ -349,7 +327,7 @@ Cube GameObject
 | **Issue** | **Solution** |
 |-----------|-------------|
 | No agents spawn | Verify `AgentSpawnerConfigAuthoring` exists, `Pool Size > 0`, `Initial Spawn Count > 0` |
-| Agents invisible | Check prefab has MeshRenderer/MeshFilter, material is SRP Batcher compatible |
+| Agents invisible | Check URP/HDRP pipeline is set up, SRP Batcher enabled, shader exists |
 | Baking errors | Check all authoring components are attached, no missing references |
 | No flow field entity | Verify `FlowFieldConfigAuthoring` exists in scene |
 | Low FPS (<30) | Disable Safety Checks in Burst, enable IL2CPP, check Profiler |
@@ -367,9 +345,10 @@ Cube GameObject
 - Verify exactly ONE instance of each config authoring component in scene
 - Check Window → Entities → Hierarchy to see baked singletons
 
-**Prefab not converting:**
-- Ensure prefab has authoring component and is NOT in scene
-- AgentSpawnerSystem instantiates prefabs at runtime
+**Agents spawned but invisible:**
+- AgentSpawnerSystem creates rendering components programmatically
+- Ensure URP/HDRP is set up with "Universal Render Pipeline/Lit" shader
+- Check GPU Instancing is enabled in Graphics settings
 
 ---
 

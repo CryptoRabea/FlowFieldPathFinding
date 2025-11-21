@@ -2,7 +2,10 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Rendering;
 using Unity.Transforms;
+using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace FlowFieldPathfinding
 {
@@ -68,7 +71,7 @@ namespace FlowFieldPathfinding
         {
             var entityManager = state.EntityManager;
 
-            // Create archetype for pooled agents
+            // Create archetype for pooled agents with rendering components
             var archetype = entityManager.CreateArchetype(
                 typeof(Agent),
                 typeof(AgentVelocity),
@@ -76,8 +79,23 @@ namespace FlowFieldPathfinding
                 typeof(AgentActive),
                 typeof(AgentPooled),
                 typeof(LocalTransform),
-                typeof(LocalToWorld)
+                typeof(LocalToWorld),
+                typeof(RenderMesh),
+                typeof(MaterialMeshInfo),
+                typeof(RenderBounds)
             );
+
+            // Create mesh and material for agents
+            var mesh = CreateCubeMesh();
+            var material = CreateDefaultMaterial();
+
+            var renderMesh = new RenderMesh
+            {
+                mesh = mesh,
+                material = material,
+                castShadows = ShadowCastingMode.On,
+                receiveShadows = true
+            };
 
             // Pre-allocate all entities
             var entities = new NativeArray<Entity>(config.PoolSize, Allocator.Temp);
@@ -105,6 +123,15 @@ namespace FlowFieldPathfinding
                 // Set initial position off-screen
                 entityManager.SetComponentData(entity, LocalTransform.FromPosition(new float3(0, -1000, 0)));
 
+                // Set rendering components
+                RenderMeshUtility.AddComponents(
+                    entity,
+                    entityManager,
+                    new RenderMeshDescription(ShadowCastingMode.On, true),
+                    new RenderMeshArray(new Material[] { material }, new Mesh[] { mesh }),
+                    MaterialMeshInfo.FromRenderMeshArrayIndices(0, 0)
+                );
+
                 // Disable by default (will enable on spawn)
                 entityManager.SetComponentEnabled<AgentActive>(entity, false);
             }
@@ -112,6 +139,55 @@ namespace FlowFieldPathfinding
             entities.Dispose();
 
             UnityEngine.Debug.Log($"[AgentSpawnerSystem] Initialized pool with {config.PoolSize} entities");
+        }
+
+        private Mesh CreateCubeMesh()
+        {
+            var mesh = new Mesh();
+
+            // Cube vertices (scaled 0.5, 1, 0.5)
+            var vertices = new Vector3[]
+            {
+                // Bottom
+                new Vector3(-0.25f, 0, -0.25f), new Vector3(0.25f, 0, -0.25f),
+                new Vector3(0.25f, 0, 0.25f), new Vector3(-0.25f, 0, 0.25f),
+                // Top
+                new Vector3(-0.25f, 1, -0.25f), new Vector3(0.25f, 1, -0.25f),
+                new Vector3(0.25f, 1, 0.25f), new Vector3(-0.25f, 1, 0.25f)
+            };
+
+            var triangles = new int[]
+            {
+                // Bottom
+                0, 2, 1, 0, 3, 2,
+                // Top
+                4, 5, 6, 4, 6, 7,
+                // Front
+                0, 1, 5, 0, 5, 4,
+                // Back
+                3, 7, 6, 3, 6, 2,
+                // Left
+                0, 4, 7, 0, 7, 3,
+                // Right
+                1, 2, 6, 1, 6, 5
+            };
+
+            mesh.vertices = vertices;
+            mesh.triangles = triangles;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            return mesh;
+        }
+
+        private Material CreateDefaultMaterial()
+        {
+            // Create a simple unlit material with cyan color
+            var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            material.color = new Color(0, 1, 1, 1); // Cyan
+            material.enableInstancing = true; // Critical for GPU instancing
+
+            return material;
         }
 
         /// <summary>
