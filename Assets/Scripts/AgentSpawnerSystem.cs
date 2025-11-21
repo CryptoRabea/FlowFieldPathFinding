@@ -1,6 +1,7 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 
@@ -73,14 +74,17 @@ namespace FlowFieldPathfinding
                 return;
             }
 
-            
+            // Register mesh and material with EntitiesGraphicsSystem
+            var mesh = meshFilter.sharedMesh;
+            var material = meshRenderer.sharedMaterial;
 
-            
-           
+            var hybridRenderer = World.GetExistingSystemManaged<EntitiesGraphicsSystem>();
+            var meshId = hybridRenderer.RegisterMesh(mesh);
+            var materialId = hybridRenderer.RegisterMaterial(material);
 
-          
+            var meshInfo = new MaterialMeshInfo(materialId, meshId);
 
-            // Create archetype for pooled agents
+            // Create archetype for pooled agents with rendering components
             var archetype = EntityManager.CreateArchetype(
                 typeof(Agent),
                 typeof(AgentVelocity),
@@ -88,7 +92,9 @@ namespace FlowFieldPathfinding
                 typeof(AgentActive),
                 typeof(AgentPooled),
                 typeof(LocalTransform),
-                typeof(LocalToWorld)
+                typeof(LocalToWorld),
+                typeof(MaterialMeshInfo),
+                typeof(RenderBounds)
             );
 
             // Pre-allocate all entities
@@ -112,7 +118,9 @@ namespace FlowFieldPathfinding
                 EntityManager.SetComponentData(entity, new AgentCellIndex { Value = -1 });
                 EntityManager.SetComponentData(entity, LocalTransform.FromPosition(new float3(0, -1000, 0)));
 
-              
+                // Set rendering components
+                EntityManager.SetComponentData(entity, meshInfo);
+                EntityManager.SetComponentData(entity, new RenderBounds { Value = mesh.bounds.ToAABB() });
 
                 // Disable by default
                 EntityManager.SetComponentEnabled<AgentActive>(entity, false);
