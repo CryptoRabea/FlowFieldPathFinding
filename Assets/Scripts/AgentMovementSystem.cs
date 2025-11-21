@@ -23,7 +23,8 @@ namespace FlowFieldPathfinding
     /// Achieves 10,000 agents @ 60 FPS on mid-range hardware.
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(FlowFieldGenerationSystem))]
+    // Note: FlowFieldGenerationSystem runs in InitializationSystemGroup which always runs before SimulationSystemGroup
+    // RequireForUpdate<FlowFieldData> ensures this system only runs after flow field is generated
     public partial struct AgentMovementSystem : ISystem
     {
         private Entity _flowFieldEntity;
