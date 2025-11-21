@@ -132,7 +132,7 @@ namespace FlowFieldPathfinding
 
             public NativeParallelMultiHashMap<int, SpatialHashEntry>.ParallelWriter SpatialHash;
 
-            public void Execute(Entity entity, ref AgentCellIndex cellIndex, in LocalTransform transform)
+            public void Execute(Entity entity, ref AgentCellIndex cellIndex, in LocalTransform transform, in AgentActive active)
             {
                 float3 pos = transform.Position;
 
@@ -191,7 +191,8 @@ namespace FlowFieldPathfinding
                 ref AgentVelocity velocity,
                 in Agent agent,
                 in AgentCellIndex cellIndex,
-                in LocalTransform transform)
+                in LocalTransform transform,
+                in AgentActive active)
             {
                 float3 position = transform.Position;
 
@@ -301,7 +302,7 @@ namespace FlowFieldPathfinding
         {
             public float DeltaTime;
 
-            public void Execute(ref LocalTransform transform, in AgentVelocity velocity)
+            public void Execute(ref LocalTransform transform, in AgentVelocity velocity, in AgentActive active)
             {
                 // Update position
                 transform.Position += velocity.Value * DeltaTime;
