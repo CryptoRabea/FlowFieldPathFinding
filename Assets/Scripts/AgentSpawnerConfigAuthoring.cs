@@ -46,13 +46,10 @@ namespace FlowFieldPathfinding
             {
                 var entity = GetEntity(TransformUsageFlags.None);
 
-                // Bake the prefab reference
-                var prefabEntity = GetEntity(authoring.agentPrefab, TransformUsageFlags.Dynamic);
-
-                // Create agent spawner config singleton
+                // Create agent spawner config singleton (prefab assigned at runtime)
                 AddComponent(entity, new AgentSpawnerConfig
                 {
-                    AgentPrefab = prefabEntity,
+                    AgentPrefab = Entity.Null, // Will be set at runtime
                     PoolSize = authoring.poolSize,
                     InitialSpawnCount = authoring.initialSpawnCount,
                     SpawnCenter = authoring.spawnCenter,
@@ -63,6 +60,12 @@ namespace FlowFieldPathfinding
                     SpawnRequested = false,
                     SpawnCount = 0,
                     ActiveCount = 0
+                });
+
+                // Store managed prefab reference
+                AddComponentObject(entity, new AgentPrefabManaged
+                {
+                    Prefab = authoring.agentPrefab
                 });
             }
         }
