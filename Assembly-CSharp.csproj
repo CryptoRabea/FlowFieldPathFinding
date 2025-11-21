@@ -73,15 +73,15 @@
     <Analyzer Include="D:\Work\UnityProjects\FlowFieldPathFinding\Library\PackageCache\com.unity.entities@42c4e852ffb4\Unity.Entities\SourceGenerators\Unity.Entities.Analyzer.CodeFixes.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\FlowFieldBootstrapAuthoring.cs" />
-    <Compile Include="Assets\FlowFieldComponents.cs" />
-    <Compile Include="Assets\AgentSpawnerSystem.cs" />
-    <Compile Include="Assets\AgentComponents.cs" />
-    <Compile Include="Assets\AgentRenderingAuthoring.cs" />
-    <Compile Include="Assets\FlowFieldBootstrap.cs" />
-    <Compile Include="Assets\AgentMovementSystem.cs" />
-    <Compile Include="Assets\FlowFieldGenerationSystem.cs" />
-    <Compile Include="Assets\PerformanceBenchmark.cs" />
+    <Compile Include="Assets\Scripts\PerformanceBenchmark.cs" />
+    <Compile Include="Assets\Scripts\AgentSpawnerSystem.cs" />
+    <Compile Include="Assets\Scripts\FlowFieldGenerationSystem.cs" />
+    <Compile Include="Assets\Scripts\AgentMovementSystem.cs" />
+    <Compile Include="Assets\Scripts\FlowFieldBootstrapAuthoring.cs" />
+    <Compile Include="Assets\Scripts\FlowFieldComponents.cs" />
+    <Compile Include="Assets\Scripts\AgentRenderingAuthoring.cs" />
+    <Compile Include="Assets\Scripts\FlowFieldBootstrap.cs" />
+    <Compile Include="Assets\Scripts\AgentComponents.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
