@@ -94,7 +94,8 @@ namespace FlowFieldPathfinding
                 typeof(LocalTransform),
                 typeof(LocalToWorld),
                 typeof(MaterialMeshInfo),
-                typeof(RenderBounds)
+                typeof(RenderBounds),
+                typeof(DisableRendering)
             );
 
             // Pre-allocate all entities
@@ -153,6 +154,7 @@ namespace FlowFieldPathfinding
                 EntityManager.SetComponentData(entity, new AgentVelocity { Value = float3.zero });
                 EntityManager.SetComponentData(entity, new AgentCellIndex { Value = -1 });
                 EntityManager.SetComponentEnabled<AgentActive>(entity, true);
+                EntityManager.RemoveComponent<DisableRendering>(entity);
 
                 spawned++;
             }
