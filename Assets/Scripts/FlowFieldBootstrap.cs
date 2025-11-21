@@ -57,16 +57,45 @@ namespace FlowFieldPathfinding
             _lastTargetPosition = targetPosition;
         }
 
+        private float _initializationAttemptTime = 0f;
+        private int _initializationAttempts = 0;
+
         private void Initialize()
         {
             if (_initialized) return;
 
+            _initializationAttempts++;
+
             // Check if ECS world is ready
             if (World.DefaultGameObjectInjectionWorld == null)
+            {
+                if (Time.time - _initializationAttemptTime > 1f)
+                {
+                    Debug.LogWarning($"[FlowFieldBootstrap] ECS World not ready (attempt {_initializationAttempts})");
+                    _initializationAttemptTime = Time.time;
+                }
                 return;
+            }
 
             if (_entityManager == default)
                 _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            // Debug: Check what entities exist
+            if (Time.time - _initializationAttemptTime > 2f)
+            {
+                var allEntities = _entityManager.GetAllEntities(Unity.Collections.Allocator.Temp);
+                Debug.Log($"[FlowFieldBootstrap] Waiting for baking... Total entities in world: {allEntities.Length} (attempt {_initializationAttempts})");
+
+                // List all entity archetypes to see what's baked
+                foreach (var entity in allEntities)
+                {
+                    var name = _entityManager.GetName(entity);
+                    Debug.Log($"  - Entity: {name}");
+                }
+                allEntities.Dispose();
+
+                _initializationAttemptTime = Time.time;
+            }
 
             // Check if flow field config entity has been baked
             var query = _entityManager.CreateEntityQuery(typeof(FlowFieldTarget));
@@ -77,7 +106,16 @@ namespace FlowFieldPathfinding
 
                 // Set initial target now that entities are baked
                 SetTargetPosition(targetPosition);
-                Debug.Log("[FlowFieldBootstrap] Initialized successfully");
+                Debug.Log($"[FlowFieldBootstrap] Initialized successfully after {_initializationAttempts} attempts");
+            }
+            else
+            {
+                // Check for FlowFieldConfig as well
+                var configQuery = _entityManager.CreateEntityQuery(typeof(FlowFieldConfig));
+                if (Time.time - _initializationAttemptTime > 2f)
+                {
+                    Debug.LogWarning($"[FlowFieldBootstrap] FlowFieldTarget not found. FlowFieldConfig found: {!configQuery.IsEmpty}");
+                }
             }
         }
 
