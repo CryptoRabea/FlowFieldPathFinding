@@ -17,6 +17,9 @@ namespace FlowFieldPathfinding
 
         /// <summary>Weight for flow field following (0-1). Higher = stronger path adherence</summary>
         public float FlowFollowWeight;
+
+        /// <summary>Weight for cohesion/grouping (0-1). Higher = stronger attraction to neighbors (zombie swarm)</summary>
+        public float CohesionWeight;
     }
 
     /// <summary>

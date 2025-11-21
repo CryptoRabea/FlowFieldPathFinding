@@ -36,6 +36,10 @@ namespace FlowFieldPathfinding
         [Range(0f, 1f)]
         public float defaultFlowFollowWeight = 1.0f;
 
+        [Tooltip("Default cohesion weight (0-1) - zombies group together")]
+        [Range(0f, 1f)]
+        public float defaultCohesionWeight = 0.3f;
+
         private class Baker : Baker<AgentSpawnerConfigAuthoring>
         {
             public override void Bake(AgentSpawnerConfigAuthoring authoring)
@@ -50,6 +54,7 @@ namespace FlowFieldPathfinding
                     DefaultSpeed = authoring.defaultSpeed,
                     DefaultAvoidanceWeight = authoring.defaultAvoidanceWeight,
                     DefaultFlowFollowWeight = authoring.defaultFlowFollowWeight,
+                    DefaultCohesionWeight = authoring.defaultCohesionWeight,
                     SpawnRequested = false,
                     SpawnCount = 0,
                     ActiveCount = 0
