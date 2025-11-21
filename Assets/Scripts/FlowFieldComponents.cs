@@ -1,8 +1,18 @@
 using Unity.Entities;
 using Unity.Mathematics;
+using UnityEngine;
 
 namespace FlowFieldPathfinding
 {
+    /// <summary>
+    /// Managed component holding the agent prefab GameObject reference.
+    /// Used for runtime instantiation of agents.
+    /// </summary>
+    public class AgentPrefabManaged : IComponentData
+    {
+        public GameObject Prefab;
+    }
+
     /// <summary>
     /// Singleton component holding flow field grid metadata.
     /// Attached to a dedicated FlowFieldEntity.
