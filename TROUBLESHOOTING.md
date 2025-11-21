@@ -23,35 +23,39 @@
 
 ### 1.1 No Agents Visible in Scene
 
-**Symptom:** Press Play, GUI shows "0 active agents"
+**Symptom:** Press Play, GUI shows "0 active agents" (or GUI doesn't appear)
 
 **Checklist:**
-- [ ] `FlowFieldBootstrap` component attached to GameObject in scene
-- [ ] `Initial Spawn Count` > 0 in Inspector
-- [ ] `Pool Size` > `Initial Spawn Count`
-- [ ] Agent prefab assigned in `Agent Prefab` field
-- [ ] Agent prefab has `AgentRenderingAuthoring` component
+- [ ] `FlowFieldConfigAuthoring` component attached to GameObject in scene
+- [ ] `AgentSpawnerConfigAuthoring` component attached to GameObject in scene
+- [ ] `Initial Spawn Count` > 0 in AgentSpawnerConfigAuthoring Inspector
+- [ ] `Pool Size` > `Initial Spawn Count` in AgentSpawnerConfigAuthoring Inspector
+- [ ] "Allow unsafe Code" enabled in Player Settings
 
-**Fix 1: Verify Bootstrap Setup**
+**Fix 1: Verify Authoring Setup**
 ```
-1. Select FlowFieldManager GameObject
-2. Inspector → FlowFieldBootstrap
-3. Check "Initial Spawn Count" = 5000 (or >0)
-4. Check "Pool Size" = 20000 (or > spawn count)
+1. Check scene has GameObject with FlowFieldConfigAuthoring
+2. Check scene has GameObject with AgentSpawnerConfigAuthoring
+3. Select the AgentSpawnerConfig GameObject
+4. Inspector → AgentSpawnerConfigAuthoring
+5. Verify "Initial Spawn Count" = 5000 (or >0)
+6. Verify "Pool Size" = 20000 (or > spawn count)
 ```
 
-**Fix 2: Check Prefab**
+**Fix 2: Enable Burst Compilation**
 ```
-1. Open agent prefab in Project window
-2. Verify it has AgentRenderingAuthoring component
-3. Verify Mesh and Material are assigned
-4. If missing, add AgentRenderingAuthoring and configure
+1. Edit → Project Settings → Player → Other Settings
+2. Allow 'unsafe' Code: ✓ ENABLED
+3. Scripting Backend: IL2CPP
+4. Restart Unity
 ```
 
 **Fix 3: Check Entity Query**
 Open Window → Entities → Systems, verify:
 - `AgentSpawnerSystem` exists and is running
-- `AgentSpawnerState` singleton created (check Entities → Hierarchy)
+- Open Window → Entities → Hierarchy, check for:
+  - `AgentSpawnerConfig` singleton entity
+  - Pooled agent entities (should see many entities with `AgentPooled` component)
 
 ---
 
@@ -59,19 +63,22 @@ Open Window → Entities → Systems, verify:
 
 **Symptom:** GUI shows "5000 active agents" but nothing visible
 
-**Cause 1: Rendering Not Setup**
+**Cause 1: Render Pipeline Not Setup**
 
 **Fix:**
 ```
-1. Open Frame Debugger (Window → Analysis → Frame Debugger)
-2. Enable and step through frames
-3. Look for "Draw Mesh" calls with agent mesh
-4. If missing → rendering components not added
+1. Verify you're using URP (Universal Render Pipeline)
+2. Check Project Settings → Graphics
+3. Ensure render pipeline asset is assigned
+4. AgentSpawnerSystem creates material with shader "Universal Render Pipeline/Lit"
+5. If using Built-in pipeline, shader may not exist
 ```
 
-Verify agent prefab has:
-- MeshFilter (or mesh in AgentRenderingAuthoring)
-- Material compatible with render pipeline (URP/HDRP/Built-in)
+**Workaround for Built-in Pipeline:**
+Modify `AgentSpawnerSystem.CreateDefaultMaterial()` (line 184) to use:
+```csharp
+var material = new Material(Shader.Find("Standard")); // Built-in
+```
 
 **Cause 2: Agents Spawned Off-Screen**
 
@@ -84,16 +91,25 @@ Verify agent prefab has:
 
 Check console for errors during spawning.
 
-**Cause 3: Material Not Visible**
+**Cause 3: Lighting Issues**
 
 **Fix:**
 ```
-1. Check agent material uses correct render pipeline shader:
-   - Built-in: Standard
-   - URP: Universal Render Pipeline/Lit
-   - HDRP: HDRP/Lit
-2. Check material color is not black (0,0,0)
-3. Verify lighting exists (Directional Light in scene)
+1. Verify Directional Light exists in scene
+2. Check light is not too dim
+3. Try changing material color in AgentSpawnerSystem.CreateDefaultMaterial()
+   - Default is cyan (0, 1, 1)
+   - Try brighter colors like white (1, 1, 1)
+```
+
+**Cause 4: Camera Not Seeing Agents**
+
+**Fix:**
+```
+1. Check camera position can see spawn area
+2. Spawn Center default: (0, 0, 0)
+3. Spawn Radius default: 20
+4. Camera should be positioned to see this area (e.g., (0, 100, -100) looking down)
 ```
 
 ---
@@ -131,9 +147,10 @@ Look for entity with FlowFieldDirectionBuffer component
 
 **Fix:**
 ```
-1. Verify FlowFieldConfigAuthoring exists in scene, OR
-2. FlowFieldBootstrap creates FlowFieldConfig singleton
+1. Verify FlowFieldConfigAuthoring component exists in scene
+2. Check Window → Entities → Hierarchy for FlowFieldConfig singleton entity
 3. Check console for flow field generation errors
+4. Verify FlowFieldGenerationSystem is running (Window → Entities → Systems)
 ```
 
 **Cause 2: Target Not Set**
@@ -609,10 +626,10 @@ struct MyJob : IJob
 
 | **Problem** | **Quick Fix** |
 |-------------|--------------|
-| Agents don't spawn | Check Pool Size > Spawn Count, verify prefab assigned |
-| Agents invisible | Check material/mesh, verify render pipeline shader |
-| Agents don't move | Enable "Show Flow Field", verify target in grid bounds |
-| Low FPS | Enable Burst, IL2CPP, disable Safety Checks |
+| Agents don't spawn | Verify FlowFieldConfigAuthoring and AgentSpawnerConfigAuthoring in scene, check Initial Spawn Count > 0 |
+| Agents invisible | Check URP pipeline setup, verify shader "Universal Render Pipeline/Lit" exists |
+| Agents don't move | Verify FlowFieldConfig singleton exists, check target in grid bounds |
+| Low FPS | Enable Burst + unsafe code, use IL2CPP, disable Safety Checks |
 | GC stutters | Remove Debug.Log, avoid LINQ, use NativeArrays |
 | Jobs not parallel | Use ScheduleParallel(), check dependencies |
 | "Unsafe code" error | Enable "Allow unsafe Code" in Player Settings |
