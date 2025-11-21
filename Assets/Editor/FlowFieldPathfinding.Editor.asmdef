@@ -2,10 +2,14 @@
     "name": "FlowFieldPathfinding.Editor",
     "rootNamespace": "FlowFieldPathfinding.Editor",
     "references": [
-        "FlowFieldPathfinding",
-        "Unity.Entities",
-        "Unity.Entities.Hybrid",
-        "Unity.Mathematics"
+        "GUID:87d8373c8c5d0e34c9c659251228be28",
+        "GUID:734d92eba21c94caba915361bd5ac177",
+        "GUID:8819f35a0fc84499b990e90a4ca1911f",
+        "GUID:d8b63aba1907145bea998dd612889d6b",
+        "GUID:085cb502223da8f46931abfa47535112",
+        "GUID:7a450cf7ca9694b5a8bfa3fd83ec635a",
+        "GUID:ecaf56f8789abe34ea6993fba292940f",
+        "GUID:ac35034034affa945a0672efca427990"
     ],
     "includePlatforms": [
         "Editor"
