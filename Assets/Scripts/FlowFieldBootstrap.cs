@@ -353,11 +353,14 @@ namespace FlowFieldPathfinding
                 }
                 else if (Event.current.keyCode == KeyCode.T)
                 {
-                    Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-                    if (Physics.Raycast(ray, out RaycastHit hit))
+                    if (Camera.main != null)
                     {
-                        targetPosition = hit.point;
-                        SetTargetPosition(targetPosition);
+                        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                        if (Physics.Raycast(ray, out RaycastHit hit))
+                        {
+                            targetPosition = hit.point;
+                            SetTargetPosition(targetPosition);
+                        }
                     }
                 }
                 else if (Event.current.keyCode == KeyCode.F)
