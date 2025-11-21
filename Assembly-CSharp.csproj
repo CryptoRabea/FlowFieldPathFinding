@@ -75,13 +75,15 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\PerformanceBenchmark.cs" />
     <Compile Include="Assets\Scripts\AgentSpawnerSystem.cs" />
+    <Compile Include="Assets\Scripts\FlowFieldConfigAuthoring.cs" />
     <Compile Include="Assets\Scripts\FlowFieldGenerationSystem.cs" />
     <Compile Include="Assets\Scripts\AgentMovementSystem.cs" />
-    <Compile Include="Assets\Scripts\FlowFieldBootstrapAuthoring.cs" />
     <Compile Include="Assets\Scripts\FlowFieldComponents.cs" />
     <Compile Include="Assets\Scripts\AgentRenderingAuthoring.cs" />
+    <Compile Include="Assets\Scripts\FlowFieldObstacleAuthoring.cs" />
     <Compile Include="Assets\Scripts\FlowFieldBootstrap.cs" />
     <Compile Include="Assets\Scripts\AgentComponents.cs" />
+    <Compile Include="Assets\Scripts\AgentSpawnerConfigAuthoring.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
