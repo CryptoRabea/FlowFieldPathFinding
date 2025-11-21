@@ -4,8 +4,6 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.Rendering;
-
 
 namespace FlowFieldPathfinding
 {
@@ -17,6 +15,7 @@ namespace FlowFieldPathfinding
     /// - Uses IEnableableComponent for instant enable/disable (no structural changes)
     /// - Supports spawning thousands of agents with zero GC pressure
     /// - Reuses entities instead of creating/destroying them
+    /// - Uses prefab-based instantiation for rendering
     ///
     /// Performance: Spawning 10,000 agents takes ~1ms (vs ~50ms with instantiation)
     /// </summary>
@@ -64,47 +63,29 @@ namespace FlowFieldPathfinding
         }
 
         /// <summary>
-        /// Pre-allocate all entities in the pool.
+        /// Pre-allocate all entities in the pool by instantiating from prefab.
         /// Creates entities with all required components but disabled.
         /// </summary>
         private void InitializePool(ref SystemState state, AgentSpawnerConfig config)
         {
             var entityManager = state.EntityManager;
 
-            // Create archetype for pooled agents with rendering components
-            var archetype = entityManager.CreateArchetype(
-                typeof(Agent),
-                typeof(AgentVelocity),
-                typeof(AgentCellIndex),
-                typeof(AgentActive),
-                typeof(AgentPooled),
-                typeof(LocalTransform),
-                typeof(LocalToWorld),
-                typeof(RenderMesh),
-                typeof(MaterialMeshInfo),
-                typeof(RenderBounds)
-            );
-
-            // Create mesh and material for agents
-            var mesh = CreateCubeMesh();
-            var material = CreateDefaultMaterial();
-
-            var renderMesh = new RenderMesh
+            if (config.AgentPrefab == Entity.Null)
             {
-                mesh = mesh,
-                material = material,
-            };
+                Debug.LogError("[AgentSpawnerSystem] Agent prefab is not assigned!");
+                return;
+            }
 
-            // Pre-allocate all entities
+            // Instantiate all entities from the prefab
             var entities = new NativeArray<Entity>(config.PoolSize, Allocator.Temp);
-            entityManager.CreateEntity(archetype, entities);
+            entityManager.Instantiate(config.AgentPrefab, entities);
 
             // Initialize each entity
             for (int i = 0; i < entities.Length; i++)
             {
                 var entity = entities[i];
 
-                // Set agent parameters
+                // Override agent parameters with config defaults
                 entityManager.SetComponentData(entity, new Agent
                 {
                     Speed = config.DefaultSpeed,
@@ -121,71 +102,13 @@ namespace FlowFieldPathfinding
                 // Set initial position off-screen
                 entityManager.SetComponentData(entity, LocalTransform.FromPosition(new float3(0, -1000, 0)));
 
-                // Set rendering components
-                RenderMeshUtility.AddComponents(
-                    entity,
-                    entityManager,
-                    new RenderMeshDescription(ShadowCastingMode.On, true),
-                    new RenderMeshArray(new Material[] { material }, new Mesh[] { mesh }),
-                    MaterialMeshInfo.FromRenderMeshArrayIndices(0, 0)
-                );
-
                 // Disable by default (will enable on spawn)
                 entityManager.SetComponentEnabled<AgentActive>(entity, false);
             }
 
             entities.Dispose();
 
-            UnityEngine.Debug.Log($"[AgentSpawnerSystem] Initialized pool with {config.PoolSize} entities");
-        }
-
-        private Mesh CreateCubeMesh()
-        {
-            var mesh = new Mesh();
-
-            // Cube vertices (scaled 0.5, 1, 0.5)
-            var vertices = new Vector3[]
-            {
-                // Bottom
-                new Vector3(-0.25f, 0, -0.25f), new Vector3(0.25f, 0, -0.25f),
-                new Vector3(0.25f, 0, 0.25f), new Vector3(-0.25f, 0, 0.25f),
-                // Top
-                new Vector3(-0.25f, 1, -0.25f), new Vector3(0.25f, 1, -0.25f),
-                new Vector3(0.25f, 1, 0.25f), new Vector3(-0.25f, 1, 0.25f)
-            };
-
-            var triangles = new int[]
-            {
-                // Bottom
-                0, 2, 1, 0, 3, 2,
-                // Top
-                4, 5, 6, 4, 6, 7,
-                // Front
-                0, 1, 5, 0, 5, 4,
-                // Back
-                3, 7, 6, 3, 6, 2,
-                // Left
-                0, 4, 7, 0, 7, 3,
-                // Right
-                1, 2, 6, 1, 6, 5
-            };
-
-            mesh.vertices = vertices;
-            mesh.triangles = triangles;
-            mesh.RecalculateNormals();
-            mesh.RecalculateBounds();
-
-            return mesh;
-        }
-
-        private Material CreateDefaultMaterial()
-        {
-            // Create a simple unlit material with cyan color
-            var material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            material.color = new Color(0, 1, 1, 1); // Cyan
-            material.enableInstancing = true; // Critical for GPU instancing
-
-            return material;
+            Debug.Log($"[AgentSpawnerSystem] Initialized pool with {config.PoolSize} entities from prefab");
         }
 
         /// <summary>
@@ -236,11 +159,11 @@ namespace FlowFieldPathfinding
 
             if (spawned < count)
             {
-                UnityEngine.Debug.LogWarning($"[AgentSpawnerSystem] Could only spawn {spawned}/{count} agents. Pool exhausted.");
+                Debug.LogWarning($"[AgentSpawnerSystem] Could only spawn {spawned}/{count} agents. Pool exhausted.");
             }
             else
             {
-                UnityEngine.Debug.Log($"[AgentSpawnerSystem] Spawned {spawned} agents. Total active: {config.ActiveCount}");
+                Debug.Log($"[AgentSpawnerSystem] Spawned {spawned} agents. Total active: {config.ActiveCount}");
             }
         }
     }
