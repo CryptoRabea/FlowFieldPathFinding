@@ -31,13 +31,15 @@ The project already includes these packages (see `Packages/manifest.json`):
 
 ## 2. Quick Reference - Authoring Components
 
-| **Component** | **Attach To** | **Purpose** | **Creates** |
-|--------------|--------------|------------|-----------|
-| `FlowFieldConfigAuthoring` | Empty GameObject (scene) | Grid settings, target position | `FlowFieldConfig` + `FlowFieldTarget` singletons |
-| `AgentSpawnerConfigAuthoring` | Empty GameObject (scene) | Pool size, spawn settings | `AgentSpawnerConfig` singleton |
-| `FlowFieldObstacleAuthoring` | Obstacle GameObject (scene) | Mark as impassable | Entity with `FlowFieldObstacle` |
-| `AgentRenderingAuthoring` | Agent prefab (NOT in scene) | Agent template | Entity with `Agent`, `AgentActive`, etc. |
-| `FlowFieldBootstrap` | Empty GameObject (optional) | Runtime control & debug UI | N/A (MonoBehaviour) |
+**Note:** `FlowFieldBootstrapAuthoring.cs` contains THREE authoring components in one file: `FlowFieldConfigAuthoring`, `AgentSpawnerConfigAuthoring`, and `FlowFieldObstacleAuthoring`. You add these as separate components to different GameObjects, but they're all defined in the same script.
+
+| **Component** | **Defined In** | **Attach To** | **Purpose** | **Creates** |
+|--------------|---------------|--------------|------------|-----------|
+| `FlowFieldConfigAuthoring` | `FlowFieldBootstrapAuthoring.cs` | Empty GameObject (scene) | Grid settings, target position | `FlowFieldConfig` + `FlowFieldTarget` singletons |
+| `AgentSpawnerConfigAuthoring` | `FlowFieldBootstrapAuthoring.cs` | Empty GameObject (scene) | Pool size, spawn settings | `AgentSpawnerConfig` singleton |
+| `FlowFieldObstacleAuthoring` | `FlowFieldBootstrapAuthoring.cs` | Obstacle GameObject (scene) | Mark as impassable | Entity with `FlowFieldObstacle` |
+| `AgentRenderingAuthoring` | `AgentRenderingAuthoring.cs` | Agent prefab (NOT in scene) | Agent template | Entity with `Agent`, `AgentActive`, etc. |
+| `FlowFieldBootstrap` | `FlowFieldBootstrap.cs` | Empty GameObject (optional) | Runtime control & debug UI | N/A (MonoBehaviour) |
 
 ---
 
@@ -92,7 +94,7 @@ Unity's new Baking system converts GameObjects into ECS entities:
 ### 4.5 Setup Flow Field Configuration
 1. **GameObject → Create Empty**
 2. Name: `FlowFieldConfig`
-3. Add component: `FlowFieldConfigAuthoring.cs`
+3. **Add Component → FlowFieldConfigAuthoring** (from `FlowFieldBootstrapAuthoring.cs`)
 4. Configure in Inspector:
    - **Grid Width**: `100` cells
    - **Grid Height**: `100` cells
@@ -107,7 +109,7 @@ Unity's new Baking system converts GameObjects into ECS entities:
 ### 4.6 Setup Agent Spawner Configuration
 1. **GameObject → Create Empty**
 2. Name: `AgentSpawnerConfig`
-3. Add component: `AgentSpawnerConfigAuthoring.cs`
+3. **Add Component → AgentSpawnerConfigAuthoring** (from `FlowFieldBootstrapAuthoring.cs`)
 4. Configure in Inspector:
    - **Pool Size**: `20000` (max agents)
    - **Initial Spawn Count**: `5000` (spawn on start)
@@ -122,7 +124,7 @@ Unity's new Baking system converts GameObjects into ECS entities:
 ### 4.7 Create Agent Prefab (NOT in scene)
 1. **GameObject → 3D Object → Cube**
 2. Scale: `(0.5, 1, 0.5)` for character-sized agent
-3. Add component: `AgentRenderingAuthoring.cs`
+3. **Add Component → AgentRenderingAuthoring**
 4. Configure in Inspector (optional, uses spawner defaults):
    - **Speed**: `5.0`
    - **Avoidance Weight**: `0.5`
@@ -138,7 +140,7 @@ Unity's new Baking system converts GameObjects into ECS entities:
 ### 4.8 Setup Runtime Controller (Optional)
 1. **GameObject → Create Empty**
 2. Name: `FlowFieldManager`
-3. Add component: `FlowFieldBootstrap.cs`
+3. **Add Component → FlowFieldBootstrap**
 4. Configure in Inspector:
    - **Target Position**: `(50, 0, 50)`
    - **Spawn Count**: `1000` (for manual spawning)
@@ -301,7 +303,7 @@ With **5000 agents**:
 
 ### Static Obstacles
 1. **GameObject → 3D Object → Cube** (or any mesh)
-2. Add component: `FlowFieldObstacleAuthoring.cs`
+2. **Add Component → FlowFieldObstacleAuthoring** (from `FlowFieldBootstrapAuthoring.cs`)
 3. Set **Radius:** `5.0` (world units - cells within radius marked as impassable)
 4. Position obstacle within grid bounds
 5. **Baking:** Obstacle is converted to ECS entity with `FlowFieldObstacle` component
