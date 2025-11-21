@@ -50,14 +50,6 @@ namespace FlowFieldPathfinding
     }
 
     /// <summary>
-    /// Tag component marking entities that belong to the agent pool.
-    /// Used to query pooled entities for spawn/despawn operations.
-    /// </summary>
-    public struct AgentPooled : IComponentData
-    {
-    }
-
-    /// <summary>
     /// Optional component for camera distance-based LOD or culling.
     /// Can be used to reduce update frequency for distant agents.
     /// </summary>

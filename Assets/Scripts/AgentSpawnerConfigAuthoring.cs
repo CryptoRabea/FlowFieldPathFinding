@@ -11,17 +11,13 @@ namespace FlowFieldPathfinding
     public class AgentSpawnerConfigAuthoring : MonoBehaviour
     {
         [Header("Agent Prefab")]
-        [Tooltip("The agent prefab to instantiate (must have AgentRenderingAuthoring)")]
+        [Tooltip("The agent prefab to instantiate (must be set up for ECS baking)")]
         public GameObject agentPrefab;
 
-        [Header("Pool Settings")]
-        [Tooltip("Total number of pre-allocated entities (max spawnable agents)")]
-        public int poolSize = 20000;
-
+        [Header("Spawn Settings")]
         [Tooltip("Number of agents to spawn on startup")]
         public int initialSpawnCount = 5000;
 
-        [Header("Spawn Area")]
         [Tooltip("Center of the spawn area in world space")]
         public Vector3 spawnCenter = new Vector3(0, 0, 0);
 
@@ -46,11 +42,8 @@ namespace FlowFieldPathfinding
             {
                 var entity = GetEntity(TransformUsageFlags.None);
 
-                // Create agent spawner config singleton (prefab assigned at runtime)
                 AddComponent(entity, new AgentSpawnerConfig
                 {
-                    AgentPrefab = Entity.Null, // Will be set at runtime
-                    PoolSize = authoring.poolSize,
                     InitialSpawnCount = authoring.initialSpawnCount,
                     SpawnCenter = authoring.spawnCenter,
                     SpawnRadius = authoring.spawnRadius,
@@ -62,11 +55,12 @@ namespace FlowFieldPathfinding
                     ActiveCount = 0
                 });
 
-                // Store managed prefab reference
-                AddComponentObject(entity, new AgentPrefabManaged
+                // Bake prefab as entity reference
+                if (authoring.agentPrefab != null)
                 {
-                    Prefab = authoring.agentPrefab
-                });
+                    var prefabEntity = GetEntity(authoring.agentPrefab, TransformUsageFlags.Dynamic);
+                    AddComponent(entity, new AgentPrefabReference { Prefab = prefabEntity });
+                }
             }
         }
     }

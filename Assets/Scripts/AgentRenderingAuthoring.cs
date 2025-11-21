@@ -56,11 +56,8 @@ namespace FlowFieldPathfinding
                     Value = -1
                 });
 
-                // Add active tag (will be enabled/disabled by spawner)
+                // Add active tag (always enabled for instantiated entities)
                 AddComponent(entity, new AgentActive());
-
-                // Add pooled tag
-                AddComponent(entity, new AgentPooled());
 
                 // Rendering is handled automatically by Entities.Graphics
                 // The GameObject's MeshRenderer and MeshFilter are converted to:
