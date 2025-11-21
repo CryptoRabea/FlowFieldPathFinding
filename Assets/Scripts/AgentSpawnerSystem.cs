@@ -1,28 +1,27 @@
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 
 namespace FlowFieldPathfinding
 {
     /// <summary>
-    /// High-performance agent spawning system using entity pooling.
-    /// Uses runtime GameObject prefab instantiation for rendering setup.
+    /// Agent spawning system using entity instantiation from prefab.
+    /// Lets Unity handle rendering automatically.
     /// </summary>
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     [UpdateAfter(typeof(FlowFieldGenerationSystem))]
     public partial class AgentSpawnerSystem : SystemBase
     {
-        private bool _poolInitialized;
+        private bool _initialized;
         private Unity.Mathematics.Random _random;
         private Entity _prefabEntity;
 
         protected override void OnCreate()
         {
             RequireForUpdate<AgentSpawnerConfig>();
-            RequireForUpdate<AgentPrefabManaged>();
+            RequireForUpdate<AgentPrefabReference>();
             _random = Unity.Mathematics.Random.CreateFromIndex((uint)System.DateTime.Now.Ticks);
         }
 
@@ -30,13 +29,11 @@ namespace FlowFieldPathfinding
         {
             var config = SystemAPI.GetSingleton<AgentSpawnerConfig>();
 
-            // Initialize pool on first run
-            if (!_poolInitialized)
+            if (!_initialized)
             {
-                InitializePool(ref config);
-                _poolInitialized = true;
+                _prefabEntity = SystemAPI.GetSingleton<AgentPrefabReference>().Prefab;
+                _initialized = true;
 
-                // Spawn initial agents if configured
                 if (config.InitialSpawnCount > 0)
                 {
                     SpawnAgents(config.InitialSpawnCount, ref config);
@@ -45,7 +42,6 @@ namespace FlowFieldPathfinding
                 return;
             }
 
-            // Handle spawn requests
             if (config.SpawnRequested)
             {
                 SpawnAgents(config.SpawnCount, ref config);
@@ -54,97 +50,11 @@ namespace FlowFieldPathfinding
             }
         }
 
-        private void InitializePool(ref AgentSpawnerConfig config)
-        {
-            // Get managed prefab
-            var prefabManaged = SystemAPI.ManagedAPI.GetSingleton<AgentPrefabManaged>();
-            if (prefabManaged.Prefab == null)
-            {
-                Debug.LogError("[AgentSpawnerSystem] Agent prefab is not assigned!");
-                return;
-            }
-
-            // Get mesh and material from prefab
-            var meshFilter = prefabManaged.Prefab.GetComponent<MeshFilter>();
-            var meshRenderer = prefabManaged.Prefab.GetComponent<MeshRenderer>();
-
-            if (meshFilter == null || meshRenderer == null)
-            {
-                Debug.LogError("[AgentSpawnerSystem] Prefab must have MeshFilter and MeshRenderer!");
-                return;
-            }
-
-            // Register mesh and material with EntitiesGraphicsSystem
-            var mesh = meshFilter.sharedMesh;
-            var material = meshRenderer.sharedMaterial;
-
-            var hybridRenderer = World.GetExistingSystemManaged<EntitiesGraphicsSystem>();
-            var meshId = hybridRenderer.RegisterMesh(mesh);
-            var materialId = hybridRenderer.RegisterMaterial(material);
-
-            var meshInfo = new MaterialMeshInfo(materialId, meshId);
-            var renderBounds = new RenderBounds { Value = mesh.bounds.ToAABB() };
-
-            // Store rendering info in config for use during spawning
-            config.CachedMeshInfo = meshInfo;
-            config.CachedRenderBounds = renderBounds;
-
-            // Create archetype for pooled agents WITHOUT rendering components
-            // Rendering components will be added when spawning to avoid batch ID issues
-            var archetype = EntityManager.CreateArchetype(
-                typeof(Agent),
-                typeof(AgentVelocity),
-                typeof(AgentCellIndex),
-                typeof(AgentActive),
-                typeof(AgentPooled),
-                typeof(LocalTransform),
-                typeof(LocalToWorld)
-            );
-
-            // Pre-allocate all entities
-            var entities = new NativeArray<Entity>(config.PoolSize, Allocator.Temp);
-            EntityManager.CreateEntity(archetype, entities);
-
-            // Initialize each entity
-            for (int i = 0; i < entities.Length; i++)
-            {
-                var entity = entities[i];
-
-                // Set agent parameters
-                EntityManager.SetComponentData(entity, new Agent
-                {
-                    Speed = config.DefaultSpeed,
-                    AvoidanceWeight = config.DefaultAvoidanceWeight,
-                    FlowFollowWeight = config.DefaultFlowFollowWeight
-                });
-
-                EntityManager.SetComponentData(entity, new AgentVelocity { Value = float3.zero });
-                EntityManager.SetComponentData(entity, new AgentCellIndex { Value = -1 });
-                EntityManager.SetComponentData(entity, LocalTransform.FromPosition(new float3(0, -1000, 0)));
-
-                // Disable by default - no rendering components yet
-                EntityManager.SetComponentEnabled<AgentActive>(entity, false);
-            }
-
-            entities.Dispose();
-            Debug.Log($"[AgentSpawnerSystem] Initialized pool with {config.PoolSize} entities");
-        }
-
         private void SpawnAgents(int count, ref AgentSpawnerConfig config)
         {
-            using var queryBuilder = new EntityQueryBuilder(Allocator.Temp)
-                .WithAll<AgentPooled, LocalTransform>()
-                .WithDisabled<AgentActive>();
-            var query = GetEntityQuery(queryBuilder);
-
-            var entities = query.ToEntityArray(Allocator.Temp);
-
-            int spawned = 0;
-            int maxToSpawn = math.min(count, entities.Length);
-
-            for (int i = 0; i < maxToSpawn; i++)
+            for (int i = 0; i < count; i++)
             {
-                var entity = entities[i];
+                var entity = EntityManager.Instantiate(_prefabEntity);
 
                 float2 randomOffset = _random.NextFloat2Direction() * _random.NextFloat(0f, config.SpawnRadius);
                 float3 spawnPosition = config.SpawnCenter + new float3(randomOffset.x, 0, randomOffset.y);
@@ -152,26 +62,16 @@ namespace FlowFieldPathfinding
                 EntityManager.SetComponentData(entity, LocalTransform.FromPosition(spawnPosition));
                 EntityManager.SetComponentData(entity, new AgentVelocity { Value = float3.zero });
                 EntityManager.SetComponentData(entity, new AgentCellIndex { Value = -1 });
-                EntityManager.SetComponentEnabled<AgentActive>(entity, true);
-
-                // Add rendering components when spawning
-                EntityManager.AddComponentData(entity, config.CachedMeshInfo);
-                EntityManager.AddComponentData(entity, config.CachedRenderBounds);
-
-                spawned++;
+                EntityManager.SetComponentData(entity, new Agent
+                {
+                    Speed = config.DefaultSpeed,
+                    AvoidanceWeight = config.DefaultAvoidanceWeight,
+                    FlowFollowWeight = config.DefaultFlowFollowWeight
+                });
             }
 
-            entities.Dispose();
-            config.ActiveCount += spawned;
-
-            if (spawned < count)
-            {
-                Debug.LogWarning($"[AgentSpawnerSystem] Could only spawn {spawned}/{count} agents. Pool exhausted.");
-            }
-            else
-            {
-                Debug.Log($"[AgentSpawnerSystem] Spawned {spawned} agents. Total active: {config.ActiveCount}");
-            }
+            config.ActiveCount += count;
+            Debug.Log($"[AgentSpawnerSystem] Spawned {count} agents. Total active: {config.ActiveCount}");
         }
     }
 }

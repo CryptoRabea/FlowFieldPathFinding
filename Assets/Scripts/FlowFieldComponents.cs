@@ -1,19 +1,8 @@
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Rendering;
-using UnityEngine;
 
 namespace FlowFieldPathfinding
 {
-    /// <summary>
-    /// Managed component holding the agent prefab GameObject reference.
-    /// Used for runtime instantiation of agents.
-    /// </summary>
-    public class AgentPrefabManaged : IComponentData
-    {
-        public GameObject Prefab;
-    }
-
     /// <summary>
     /// Singleton component holding flow field grid metadata.
     /// Attached to a dedicated FlowFieldEntity.
@@ -133,12 +122,6 @@ namespace FlowFieldPathfinding
     /// </summary>
     public struct AgentSpawnerConfig : IComponentData
     {
-        /// <summary>Prefab entity to instantiate for agents</summary>
-        public Entity AgentPrefab;
-
-        /// <summary>Total number of pre-allocated entities in the pool</summary>
-        public int PoolSize;
-
         /// <summary>Number of agents to spawn initially</summary>
         public int InitialSpawnCount;
 
@@ -165,11 +148,13 @@ namespace FlowFieldPathfinding
 
         /// <summary>Current number of active agents</summary>
         public int ActiveCount;
+    }
 
-        /// <summary>Cached MaterialMeshInfo for spawned agents</summary>
-        public MaterialMeshInfo CachedMeshInfo;
-
-        /// <summary>Cached RenderBounds for spawned agents</summary>
-        public RenderBounds CachedRenderBounds;
+    /// <summary>
+    /// Singleton holding reference to the baked agent prefab entity.
+    /// </summary>
+    public struct AgentPrefabReference : IComponentData
+    {
+        public Entity Prefab;
     }
 }
