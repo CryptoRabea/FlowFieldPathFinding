@@ -1,5 +1,6 @@
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Rendering;
 using UnityEngine;
 
 namespace FlowFieldPathfinding
@@ -164,5 +165,11 @@ namespace FlowFieldPathfinding
 
         /// <summary>Current number of active agents</summary>
         public int ActiveCount;
+
+        /// <summary>Cached MaterialMeshInfo for spawned agents</summary>
+        public MaterialMeshInfo CachedMeshInfo;
+
+        /// <summary>Cached RenderBounds for spawned agents</summary>
+        public RenderBounds CachedRenderBounds;
     }
 }
