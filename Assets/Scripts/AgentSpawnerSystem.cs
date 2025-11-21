@@ -73,17 +73,12 @@ namespace FlowFieldPathfinding
                 return;
             }
 
-            var mesh = meshFilter.sharedMesh;
-            var material = meshRenderer.sharedMaterial;
+            
 
-            // Create rendering setup
-            var renderMeshDescription = new RenderMeshDescription(
-                shadowCastingMode: UnityEngine.Rendering.ShadowCastingMode.On,
-                receiveShadows: true
-            );
+            
+           
 
-            var renderMeshArray = new RenderMeshArray(new[] { material }, new[] { mesh });
-            var materialMeshInfo = MaterialMeshInfo.FromRenderMeshArrayIndices(0, 0);
+          
 
             // Create archetype for pooled agents
             var archetype = EntityManager.CreateArchetype(
@@ -117,14 +112,7 @@ namespace FlowFieldPathfinding
                 EntityManager.SetComponentData(entity, new AgentCellIndex { Value = -1 });
                 EntityManager.SetComponentData(entity, LocalTransform.FromPosition(new float3(0, -1000, 0)));
 
-                // Add rendering components
-                RenderMeshUtility.AddComponents(
-                    entity,
-                    EntityManager,
-                    renderMeshDescription,
-                    renderMeshArray,
-                    materialMeshInfo
-                );
+              
 
                 // Disable by default
                 EntityManager.SetComponentEnabled<AgentActive>(entity, false);

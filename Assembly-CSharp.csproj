@@ -1449,6 +1449,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="FlowFieldPathfinding.Editor.csproj">
+      <Project>{07E39303-3DF3-4317-BE41-6C1C69B4D40E}</Project>
+      <Name>FlowFieldPathfinding.Editor</Name>
+    </ProjectReference>
     <ProjectReference Include="FlowFieldPathfinding.csproj">
       <Project>{9FFC5E07-EE1A-F92C-ECCD-9AB5FA2899B7}</Project>
       <Name>FlowFieldPathfinding</Name>
