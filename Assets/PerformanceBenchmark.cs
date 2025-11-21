@@ -77,8 +77,13 @@ namespace FlowFieldPathfinding
 
         private void Start()
         {
+<<<<<<< Updated upstream
             _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             _bootstrap = FindObjectOfType<FlowFieldBootstrap>();
+=======
+            _entityManager = World.DefaultGlobalSystemGroup.World.EntityManager;
+            _bootstrap = FindAnyObjectByType<FlowFieldBootstrap>();
+>>>>>>> Stashed changes
 
             if (_bootstrap == null)
             {
