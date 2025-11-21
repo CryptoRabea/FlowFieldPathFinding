@@ -85,7 +85,11 @@ namespace FlowFieldPathfinding
             {
                 var entity = entities[i];
 
-                // Override agent parameters with config defaults
+                // Add/set agent component with config defaults
+                if (!entityManager.HasComponent<Agent>(entity))
+                {
+                    entityManager.AddComponent<Agent>(entity);
+                }
                 entityManager.SetComponentData(entity, new Agent
                 {
                     Speed = config.DefaultSpeed,
@@ -93,11 +97,31 @@ namespace FlowFieldPathfinding
                     FlowFollowWeight = config.DefaultFlowFollowWeight
                 });
 
-                // Initialize velocity to zero
+                // Add/set velocity component
+                if (!entityManager.HasComponent<AgentVelocity>(entity))
+                {
+                    entityManager.AddComponent<AgentVelocity>(entity);
+                }
                 entityManager.SetComponentData(entity, new AgentVelocity { Value = float3.zero });
 
-                // Initialize cell index to -1 (unassigned)
+                // Add/set cell index component
+                if (!entityManager.HasComponent<AgentCellIndex>(entity))
+                {
+                    entityManager.AddComponent<AgentCellIndex>(entity);
+                }
                 entityManager.SetComponentData(entity, new AgentCellIndex { Value = -1 });
+
+                // Add pooled tag if missing
+                if (!entityManager.HasComponent<AgentPooled>(entity))
+                {
+                    entityManager.AddComponent<AgentPooled>(entity);
+                }
+
+                // Add active tag if missing (enableable component)
+                if (!entityManager.HasComponent<AgentActive>(entity))
+                {
+                    entityManager.AddComponent<AgentActive>(entity);
+                }
 
                 // Set initial position off-screen
                 entityManager.SetComponentData(entity, LocalTransform.FromPosition(new float3(0, -1000, 0)));
