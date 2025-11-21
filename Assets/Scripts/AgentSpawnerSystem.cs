@@ -83,8 +83,14 @@ namespace FlowFieldPathfinding
             var materialId = hybridRenderer.RegisterMaterial(material);
 
             var meshInfo = new MaterialMeshInfo(materialId, meshId);
+            var renderBounds = new RenderBounds { Value = mesh.bounds.ToAABB() };
 
-            // Create archetype for pooled agents with rendering components
+            // Store rendering info in config for use during spawning
+            config.CachedMeshInfo = meshInfo;
+            config.CachedRenderBounds = renderBounds;
+
+            // Create archetype for pooled agents WITHOUT rendering components
+            // Rendering components will be added when spawning to avoid batch ID issues
             var archetype = EntityManager.CreateArchetype(
                 typeof(Agent),
                 typeof(AgentVelocity),
@@ -92,10 +98,7 @@ namespace FlowFieldPathfinding
                 typeof(AgentActive),
                 typeof(AgentPooled),
                 typeof(LocalTransform),
-                typeof(LocalToWorld),
-                typeof(MaterialMeshInfo),
-                typeof(RenderBounds),
-                typeof(DisableRendering)
+                typeof(LocalToWorld)
             );
 
             // Pre-allocate all entities
@@ -119,11 +122,7 @@ namespace FlowFieldPathfinding
                 EntityManager.SetComponentData(entity, new AgentCellIndex { Value = -1 });
                 EntityManager.SetComponentData(entity, LocalTransform.FromPosition(new float3(0, -1000, 0)));
 
-                // Set rendering components
-                EntityManager.SetComponentData(entity, meshInfo);
-                EntityManager.SetComponentData(entity, new RenderBounds { Value = mesh.bounds.ToAABB() });
-
-                // Disable by default
+                // Disable by default - no rendering components yet
                 EntityManager.SetComponentEnabled<AgentActive>(entity, false);
             }
 
@@ -154,7 +153,10 @@ namespace FlowFieldPathfinding
                 EntityManager.SetComponentData(entity, new AgentVelocity { Value = float3.zero });
                 EntityManager.SetComponentData(entity, new AgentCellIndex { Value = -1 });
                 EntityManager.SetComponentEnabled<AgentActive>(entity, true);
-                EntityManager.RemoveComponent<DisableRendering>(entity);
+
+                // Add rendering components when spawning
+                EntityManager.AddComponentData(entity, config.CachedMeshInfo);
+                EntityManager.AddComponentData(entity, config.CachedRenderBounds);
 
                 spawned++;
             }
