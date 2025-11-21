@@ -122,6 +122,9 @@ namespace FlowFieldPathfinding
     /// </summary>
     public struct AgentSpawnerConfig : IComponentData
     {
+        /// <summary>Prefab entity to instantiate for agents</summary>
+        public Entity AgentPrefab;
+
         /// <summary>Total number of pre-allocated entities in the pool</summary>
         public int PoolSize;
 

@@ -10,6 +10,10 @@ namespace FlowFieldPathfinding
     /// </summary>
     public class AgentSpawnerConfigAuthoring : MonoBehaviour
     {
+        [Header("Agent Prefab")]
+        [Tooltip("The agent prefab to instantiate (must have AgentRenderingAuthoring)")]
+        public GameObject agentPrefab;
+
         [Header("Pool Settings")]
         [Tooltip("Total number of pre-allocated entities (max spawnable agents)")]
         public int poolSize = 20000;
@@ -42,9 +46,13 @@ namespace FlowFieldPathfinding
             {
                 var entity = GetEntity(TransformUsageFlags.None);
 
+                // Bake the prefab reference
+                var prefabEntity = GetEntity(authoring.agentPrefab, TransformUsageFlags.Dynamic);
+
                 // Create agent spawner config singleton
                 AddComponent(entity, new AgentSpawnerConfig
                 {
+                    AgentPrefab = prefabEntity,
                     PoolSize = authoring.poolSize,
                     InitialSpawnCount = authoring.initialSpawnCount,
                     SpawnCenter = authoring.spawnCenter,
