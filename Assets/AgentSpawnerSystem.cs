@@ -43,7 +43,8 @@ namespace FlowFieldPathfinding
                 // Spawn initial agents if configured
                 if (config.InitialSpawnCount > 0)
                 {
-                    SpawnAgents(ref state, config.InitialSpawnCount, config);
+                    SpawnAgents(ref state, config.InitialSpawnCount, ref config);
+                    SystemAPI.SetSingleton(config);
                 }
                 return;
             }
@@ -51,7 +52,7 @@ namespace FlowFieldPathfinding
             // Handle spawn requests
             if (config.SpawnRequested)
             {
-                SpawnAgents(ref state, config.SpawnCount, config);
+                SpawnAgents(ref state, config.SpawnCount, ref config);
 
                 // Reset spawn request
                 config.SpawnRequested = false;
@@ -116,18 +117,17 @@ namespace FlowFieldPathfinding
         /// <summary>
         /// Spawn agents by enabling inactive entities from the pool.
         /// </summary>
-        private void SpawnAgents(ref SystemState state, int count, AgentSpawnerConfig config)
+        private void SpawnAgents(ref SystemState state, int count, ref AgentSpawnerConfig config)
         {
             var entityManager = state.EntityManager;
 
-            // Query for inactive pooled agents
-            var query = SystemAPI.QueryBuilder()
+            // Query for inactive pooled agents using EntityManager
+            using var queryBuilder = new EntityQueryBuilder(Allocator.Temp)
                 .WithAll<AgentPooled, LocalTransform>()
-                .WithDisabled<AgentActive>()
-                .Build();
+                .WithDisabled<AgentActive>();
+            var query = state.GetEntityQuery(queryBuilder);
 
             var entities = query.ToEntityArray(Allocator.Temp);
-            var transforms = query.ToComponentDataArray<LocalTransform>(Allocator.Temp);
 
             int spawned = 0;
             int maxToSpawn = math.min(count, entities.Length);
@@ -156,11 +156,9 @@ namespace FlowFieldPathfinding
             }
 
             entities.Dispose();
-            transforms.Dispose();
 
             // Update active count
             config.ActiveCount += spawned;
-            SystemAPI.SetSingleton(config);
 
             if (spawned < count)
             {
@@ -170,46 +168,6 @@ namespace FlowFieldPathfinding
             {
                 UnityEngine.Debug.Log($"[AgentSpawnerSystem] Spawned {spawned} agents. Total active: {config.ActiveCount}");
             }
-        }
-
-        /// <summary>
-        /// Despawn agents by disabling them (moves them off-screen and back to pool).
-        /// Call this from external systems when agents need to be removed.
-        /// </summary>
-        public static void DespawnAgents(ref SystemState state, int count)
-        {
-            var entityManager = state.EntityManager;
-
-            // Query for active pooled agents
-            var query = SystemAPI.QueryBuilder()
-                .WithAll<AgentPooled, AgentActive>()
-                .Build();
-
-            var entities = query.ToEntityArray(Allocator.Temp);
-            int despawned = 0;
-            int maxToDespawn = math.min(count, entities.Length);
-
-            for (int i = 0; i < maxToDespawn; i++)
-            {
-                var entity = entities[i];
-
-                // Move off-screen
-                entityManager.SetComponentData(entity, LocalTransform.FromPosition(new float3(0, -1000, 0)));
-
-                // Disable the agent
-                entityManager.SetComponentEnabled<AgentActive>(entity, false);
-
-                despawned++;
-            }
-
-            entities.Dispose();
-
-            // Update active count
-            var config = SystemAPI.GetSingleton<AgentSpawnerConfig>();
-            config.ActiveCount = math.max(0, config.ActiveCount - despawned);
-            SystemAPI.SetSingleton(config);
-
-            UnityEngine.Debug.Log($"[AgentSpawnerSystem] Despawned {despawned} agents. Total active: {config.ActiveCount}");
         }
     }
 }
