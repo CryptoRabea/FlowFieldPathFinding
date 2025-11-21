@@ -93,8 +93,6 @@ namespace FlowFieldPathfinding
             {
                 mesh = mesh,
                 material = material,
-                castShadows = ShadowCastingMode.On,
-                receiveShadows = true
             };
 
             // Pre-allocate all entities
