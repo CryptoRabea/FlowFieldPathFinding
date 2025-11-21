@@ -122,6 +122,8 @@ namespace FlowFieldPathfinding
     /// </summary>
     public struct AgentSpawnerConfig : IComponentData
     {
+        internal readonly int PoolSize;
+
         /// <summary>Number of agents to spawn initially</summary>
         public int InitialSpawnCount;
 

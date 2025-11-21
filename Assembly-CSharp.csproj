@@ -84,10 +84,19 @@
     <Compile Include="Assets\Scripts\FlowFieldComponents.cs" />
     <Compile Include="Assets\NewIJobEntityScript.cs" />
     <Compile Include="Assets\Scripts\AgentRenderingAuthoring.cs" />
+    <Compile Include="Assets\Scripts\FlowFieldVisualization.cs" />
     <Compile Include="Assets\Scripts\FlowFieldObstacleAuthoring.cs" />
     <Compile Include="Assets\Scripts\FlowFieldBootstrap.cs" />
+    <Compile Include="Assets\InputSystem_Actions.cs" />
+    <Compile Include="Assets\Scripts\FlockingVisualization.cs" />
     <Compile Include="Assets\Scripts\AgentComponents.cs" />
     <Compile Include="Assets\Scripts\AgentSpawnerConfigAuthoring.cs" />
+    <Compile Include="Assets\Scripts\PlayerMovement.cs" />
+    <Compile Include="Assets\Scripts\RTSCameraController.cs" />
+    <Compile Include="Assets\Scripts\AgentPhysicsAuthoring.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assets\ArtStore3D\Zombie Cartoon\Readme.txt" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
