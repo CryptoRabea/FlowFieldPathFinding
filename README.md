@@ -2,6 +2,8 @@
 
 **High-performance crowd simulation with 10,000+ agents @ 60 FPS**
 
+> **🚀 NEW USER? START HERE:** [`QUICKSTART.md`](QUICKSTART.md) - Get running in 5 minutes!
+
 ## Overview
 
 This project implements a production-ready flow field pathfinding system using Unity's Data-Oriented Technology Stack (DOTS). It achieves high performance through:
@@ -36,20 +38,26 @@ This project implements a production-ready flow field pathfinding system using U
 
 ### 2. Scene Setup
 ```
-1. Create new scene
-2. Add empty GameObject → name: "FlowFieldManager"
-3. Add component: FlowFieldBootstrap
-4. Create cube prefab with AgentRenderingAuthoring component
-5. Assign prefab to bootstrap
-6. Press Play!
+1. Create new scene with ground plane and camera
+2. Add empty GameObject → name: "FlowFieldConfig"
+3. Add component: FlowFieldConfigAuthoring (grid settings)
+4. Add empty GameObject → name: "AgentSpawnerConfig"
+5. Add component: AgentSpawnerConfigAuthoring (spawner settings)
+6. (Optional) Add GameObject → name: "FlowFieldManager"
+7. (Optional) Add component: FlowFieldBootstrap (runtime control)
+8. Enable "Allow unsafe Code" in Player Settings
+9. Press Play!
 ```
 
-**Detailed instructions:** See `SETUP_GUIDE.md`
+**⚠️ No Prefab Needed!** Agents are created programmatically with rendering components by the `AgentSpawnerSystem`.
+
+**Detailed instructions:** See `QUICKSTART.md` or `SETUP_GUIDE.md`
 
 ### 3. First Run
-- 5000 agents spawn automatically
-- Use GUI sliders to spawn more or move target
-- Enable "Show Flow Field" to visualize pathfinding
+- 5000 agents spawn automatically (cyan cubes)
+- Agents move toward target position using flow field
+- Use GUI controls to spawn more or change target
+- Enable "Show Flow Field" to visualize pathfinding arrows
 
 ---
 
@@ -319,20 +327,21 @@ With instancing:
 ### Core Systems
 - `AgentComponents.cs` - ECS component definitions
 - `FlowFieldComponents.cs` - Flow field data structures
-- `AgentSpawnerSystem.cs` - Entity pooling and spawning
-- `FlowFieldGenerationSystem.cs` - Flow field algorithm
-- `AgentMovementSystem.cs` - Movement + avoidance jobs
-- `AgentRenderingAuthoring.cs` - GPU instancing setup
+- `AgentSpawnerSystem.cs` - Entity pooling and programmatic spawning with rendering
+- `FlowFieldGenerationSystem.cs` - Flow field algorithm (cost → integration → direction)
+- `AgentMovementSystem.cs` - Movement + spatial hash avoidance jobs
+- `AgentRenderingAuthoring.cs` - **(UNUSED)** Legacy prefab-based authoring
 
-### Scene Setup
-- `FlowFieldBootstrap.cs` - MonoBehaviour scene controller
-- `FlowFieldBootstrapAuthoring.cs` - ECS authoring components
+### Scene Setup & Control
+- `FlowFieldBootstrap.cs` - MonoBehaviour runtime controller (optional)
+- `FlowFieldBootstrapAuthoring.cs` - ECS authoring components (FlowFieldConfigAuthoring, AgentSpawnerConfigAuthoring, FlowFieldObstacleAuthoring)
 
 ### Tools
 - `PerformanceBenchmark.cs` - Automated performance testing
 
 ### Documentation
-- `SETUP_GUIDE.md` - Step-by-step scene setup
+- `QUICKSTART.md` - **START HERE** - Get running in 5 minutes
+- `SETUP_GUIDE.md` - Detailed scene setup with baking workflow
 - `PROFILING_GUIDE.md` - How to measure and optimize
 - `OPTIMIZATION_ROADMAP.md` - Prioritized optimization list
 - `TROUBLESHOOTING.md` - Common errors and solutions
