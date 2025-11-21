@@ -8,7 +8,7 @@ This project implements high-performance crowd pathfinding using Unity DOTS (Dat
 ## 1. Prerequisites
 
 ### Unity Version
-- **Unity 6.2 LTS** (or 6.x series)
+- **Unity 6.x LTS** (or 6.x series)
 - Tested with **Unity 6000.0.25f1**
 
 ### Required Packages
@@ -20,7 +20,6 @@ The project already includes these packages (see `Packages/manifest.json`):
   "com.unity.entities.graphics": "1.4.16",
   "com.unity.burst": "1.8.25",
   "com.unity.collections": "2.6.3",
-  "com.unity.jobs": "0.80.0" (included with Entities),
   "com.unity.mathematics": "1.3.2"
 }
 ```
@@ -30,109 +29,135 @@ The project already includes these packages (see `Packages/manifest.json`):
 
 ---
 
-## 2. Project Structure
+## 2. Quick Reference - Authoring Components
 
-```
-Assets/
-├── AgentComponents.cs               # Core ECS component definitions
-├── FlowFieldComponents.cs           # Flow field data structures
-├── AgentSpawnerSystem.cs            # Entity pooling system
-├── FlowFieldGenerationSystem.cs     # Flow field pathfinding
-├── AgentMovementSystem.cs           # Movement + spatial hashing avoidance
-├── AgentRenderingAuthoring.cs       # Rendering setup (GPU instancing)
-├── FlowFieldBootstrap.cs            # MonoBehaviour scene controller
-├── FlowFieldBootstrapAuthoring.cs   # ECS authoring components
-├── PerformanceBenchmark.cs          # Automated benchmarking
-└── Materials/
-    └── AgentMaterial.mat            # SRP-compatible material (URP/HDRP)
-```
+| **Component** | **Attach To** | **Purpose** | **Creates** |
+|--------------|--------------|------------|-----------|
+| `FlowFieldConfigAuthoring` | Empty GameObject (scene) | Grid settings, target position | `FlowFieldConfig` + `FlowFieldTarget` singletons |
+| `AgentSpawnerConfigAuthoring` | Empty GameObject (scene) | Pool size, spawn settings | `AgentSpawnerConfig` singleton |
+| `FlowFieldObstacleAuthoring` | Obstacle GameObject (scene) | Mark as impassable | Entity with `FlowFieldObstacle` |
+| `AgentRenderingAuthoring` | Agent prefab (NOT in scene) | Agent template | Entity with `Agent`, `AgentActive`, etc. |
+| `FlowFieldBootstrap` | Empty GameObject (optional) | Runtime control & debug UI | N/A (MonoBehaviour) |
 
 ---
 
-## 3. Scene Setup (Step-by-Step)
+## 3. Architecture Overview
 
-### 3.1 Create New Scene
+### ECS Systems
+- **FlowFieldGenerationSystem** - Generates flow field when target changes
+- **AgentSpawnerSystem** - Manages entity pool with zero-allocation spawning
+- **AgentMovementSystem** - Updates agent positions using flow field + avoidance
+
+### Baking Workflow
+Unity's new Baking system converts GameObjects into ECS entities:
+
+**Singleton Entities (Scene):**
+- `FlowFieldConfigAuthoring` → Bakes into `FlowFieldConfig` + `FlowFieldTarget`
+- `AgentSpawnerConfigAuthoring` → Bakes into `AgentSpawnerConfig`
+
+**Obstacle Entities (Scene):**
+- `FlowFieldObstacleAuthoring` → Bakes into entities with `FlowFieldObstacle`
+
+**Prefab Entities (Template):**
+- `AgentRenderingAuthoring` → Bakes prefab into ECS agent template
+
+**Runtime Controller (Optional):**
+- `FlowFieldBootstrap` - MonoBehaviour for testing/debugging (not baked)
+
+---
+
+## 4. Scene Setup (Step-by-Step)
+
+### 4.1 Create New Scene
 1. **File → New Scene → Basic (Built-in) or URP**
 2. Save as `FlowFieldScene.unity`
 
-### 3.2 Setup Ground Plane
+### 4.2 Setup Ground Plane
 1. **GameObject → 3D Object → Plane**
 2. Scale: `(50, 1, 50)` to create 500x500 unit area
 3. Position: `(0, 0, 0)`
 4. Optional: Apply material for visual clarity
 
-### 3.3 Setup Lighting
+### 4.3 Setup Lighting
 1. **GameObject → Light → Directional Light**
 2. Rotation: `(50, -30, 0)` for natural lighting
 3. If using URP: Ensure scene has Volume with Global Illumination baked
 
-### 3.4 Setup Camera
+### 4.4 Setup Camera
 1. Select Main Camera
 2. Position: `(0, 100, -100)`
 3. Rotation: `(45, 0, 0)` to look down at grid
 4. Adjust Field of View: `60`
 
-### 3.5 Create Bootstrap GameObject
+### 4.5 Setup Flow Field Configuration
 1. **GameObject → Create Empty**
-2. Name: `FlowFieldManager`
-3. Add components:
-   - `FlowFieldBootstrap.cs`
-   - `PerformanceBenchmark.cs` (optional)
+2. Name: `FlowFieldConfig`
+3. Add component: `FlowFieldConfigAuthoring.cs`
+4. Configure in Inspector:
+   - **Grid Width**: `100` cells
+   - **Grid Height**: `100` cells
+   - **Cell Size**: `2.0` units
+   - **Grid Origin**: `(-100, 0, -100)`
+   - **Target Position**: `(50, 0, 50)`
+   - **Obstacle Cost**: `255` (impassable)
+   - **Default Cost**: `1` (traversable)
 
-### 3.6 Create Agent Prefab
-1. **GameObject → 3D Object → Cube** (this automatically has MeshRenderer and MeshFilter)
+**What this does:** Creates singleton entities (`FlowFieldConfig` and `FlowFieldTarget`) that control the pathfinding grid.
+
+### 4.6 Setup Agent Spawner Configuration
+1. **GameObject → Create Empty**
+2. Name: `AgentSpawnerConfig`
+3. Add component: `AgentSpawnerConfigAuthoring.cs`
+4. Configure in Inspector:
+   - **Pool Size**: `20000` (max agents)
+   - **Initial Spawn Count**: `5000` (spawn on start)
+   - **Spawn Center**: `(0, 0, 0)`
+   - **Spawn Radius**: `20`
+   - **Default Speed**: `5.0`
+   - **Default Avoidance Weight**: `0.5`
+   - **Default Flow Follow Weight**: `1.0`
+
+**What this does:** Creates a singleton entity (`AgentSpawnerConfig`) that controls the agent pool.
+
+### 4.7 Create Agent Prefab (NOT in scene)
+1. **GameObject → 3D Object → Cube**
 2. Scale: `(0.5, 1, 0.5)` for character-sized agent
-3. (Optional) Adjust material: Select the cube's MeshRenderer and assign a colored material
-4. Add component: `AgentRenderingAuthoring.cs`
-5. Configure in Inspector:
+3. Add component: `AgentRenderingAuthoring.cs`
+4. Configure in Inspector (optional, uses spawner defaults):
    - **Speed**: `5.0`
    - **Avoidance Weight**: `0.5`
    - **Flow Follow Weight**: `1.0`
-6. **Important**: The cube must keep its MeshRenderer and MeshFilter components (already present)
-7. **Drag to Project → Prefabs/** to create prefab
-8. Delete from scene
+5. **Create Prefab:**
+   - **Drag cube to Project window** → Save as `AgentPrefab.prefab`
+   - **Delete cube from scene** (prefab will be instantiated by spawner)
 
-**Note**: Entities.Graphics automatically converts MeshRenderer/MeshFilter to ECS rendering components with GPU instancing.
+**What this does:** The Baker converts the GameObject into an ECS entity template with all required components. The AgentSpawnerSystem will instantiate these entities into the pool at runtime.
 
-### 3.7 Configure Bootstrap
-Select `FlowFieldManager` GameObject and configure `FlowFieldBootstrap`:
+**Note**: Entities.Graphics automatically converts MeshRenderer/MeshFilter to ECS rendering with GPU instancing.
 
-**Agent Settings:**
-- Agent Prefab: *Drag your cube prefab here*
-- Pool Size: `20000`
-- Initial Spawn Count: `5000`
-- Agent Speed: `5.0`
+### 4.8 Setup Runtime Controller (Optional)
+1. **GameObject → Create Empty**
+2. Name: `FlowFieldManager`
+3. Add component: `FlowFieldBootstrap.cs`
+4. Configure in Inspector:
+   - **Target Position**: `(50, 0, 50)`
+   - **Spawn Count**: `1000` (for manual spawning)
+   - **Show Flow Field**: `false` (toggle for debugging)
 
-**Flow Field Settings:**
-- Grid Width: `100` cells
-- Grid Height: `100` cells
-- Cell Size: `2.0` units
-- Grid Origin: `(-100, 0, -100)`
-
-**Spawn Settings:**
-- Spawn Center: `(0, 0, 0)`
-- Spawn Radius: `50`
-
-**Target:**
-- Target Position: `(50, 0, 50)`
-- (Optional) Target Transform: Assign a GameObject to dynamically update target
-
-**Debug Visualization:**
-- Show Flow Field: `false` (enable for debugging)
-- Show Grid: `false`
+**What this does:** Provides runtime control and visualization. Not required for the system to work, but useful for testing and debugging.
 
 ---
 
-## 4. Build Settings (Critical for Performance)
+## 5. Build Settings (Critical for Performance)
 
-### 4.1 Player Settings
+### 5.1 Player Settings
 1. **Edit → Project Settings → Player**
 2. **Other Settings:**
    - Scripting Backend: **IL2CPP** (required for Burst)
    - API Compatibility: **.NET Standard 2.1**
    - Allow 'unsafe' Code: **✓ Enabled**
 
-### 4.2 Burst Settings
+### 5.2 Burst Settings
 1. **Jobs → Burst → Burst AOT Settings**
 2. **Enable Burst Compilation: ✓**
 3. **Optimizations:**
@@ -140,13 +165,13 @@ Select `FlowFieldManager` GameObject and configure `FlowFieldBootstrap`:
    - Safety Checks: **Off** (for release builds)
    - Debug Info: **Off** (for release)
 
-### 4.3 Quality Settings
+### 5.3 Quality Settings
 1. **Edit → Project Settings → Quality**
 2. Set active quality level to **Medium** or **High**
 3. **V-Sync Count:** `Don't Sync` (for accurate FPS measurement)
 4. **Anti-Aliasing:** FXAA or SMAA (lower cost)
 
-### 4.4 Graphics Settings (URP)
+### 5.4 Graphics Settings (URP)
 If using URP:
 1. **Edit → Project Settings → Graphics**
 2. Ensure **UniversalRenderPipelineAsset** is assigned
@@ -157,44 +182,85 @@ If using URP:
 
 ---
 
-## 5. Running the Scene
+## 6. Understanding the Authoring Workflow
 
-### 5.1 First Run
-1. Press **Play**
-2. You should see:
-   - 5000 agents spawn randomly within 50-unit radius
-   - Agents move toward target position using flow field
-   - GUI overlay showing FPS and agent count
+Unity's new **Baking system** (introduced in Entities 1.0+) replaces the old conversion system:
 
-### 5.2 Controls
-**GUI Controls (Top-left):**
-- **Spawn slider:** Adjust spawn count (100-5000)
-- **Spawn button:** Spawn additional agents
-- **Target sliders:** Move target position (X/Z)
-- **Checkboxes:** Toggle debug visualization
+### Traditional GameObject → ECS Entity
+1. Add an Authoring component (MonoBehaviour) to a GameObject
+2. Add a **Baker class** inside the authoring component
+3. Baker runs automatically during baking (in Editor and at build time)
+4. Baker creates ECS entities and components from GameObject data
 
-**Manual Target Movement:**
-- Assign a Transform to `Target Transform` field
-- Move the GameObject in Scene view during Play mode
+### In This Project
+
+**Singleton Entities (Scene Config):**
+- `FlowFieldConfigAuthoring` → Bakes into `FlowFieldConfig` + `FlowFieldTarget` singletons
+- `AgentSpawnerConfigAuthoring` → Bakes into `AgentSpawnerConfig` singleton
+- `FlowFieldObstacleAuthoring` → Bakes into entities with `FlowFieldObstacle` component
+
+**Prefab Entities (Agent Template):**
+- `AgentRenderingAuthoring` → Bakes prefab into ECS entity with `Agent`, `AgentVelocity`, `AgentCellIndex`, `AgentActive`, `AgentPooled` components
+
+### When Baking Happens
+- **Automatically:** When you modify authoring components in Editor
+- **On Play:** Before entering Play mode
+- **At Build Time:** When building the project
+- **SubScene Baking:** For large scenes (not used in this project)
+
+### Viewing Baked Entities
+1. **Enter Play Mode**
+2. **Window → Entities → Hierarchy** to see baked entities
+3. Select an entity to see its ECS components in Inspector
 
 ---
 
-## 6. Verification Checklist
+## 7. Running the Scene
+
+### 7.1 First Run
+1. Press **Play**
+2. You should see:
+   - Agents spawn automatically (based on `Initial Spawn Count`)
+   - Agents move toward target position using flow field
+   - If `FlowFieldBootstrap` is present: GUI overlay with controls
+
+### 7.2 Controls (if using FlowFieldBootstrap)
+**GUI Controls (Top-left):**
+- **Active Agents count**
+- **Keyboard shortcuts:**
+  - **[Space]** - Spawn more agents
+  - **[T]** - Set target to mouse position (raycast required)
+  - **[F]** - Toggle flow field visualization
+
+**Manual Control:**
+- Modify `Target Position` in `FlowFieldBootstrap` Inspector during Play mode
+- Change spawner settings in `AgentSpawnerConfig` Inspector
+
+---
+
+## 8. Verification Checklist
+
+### ✓ Authoring Setup
+In Edit mode, verify:
+- `FlowFieldConfig` GameObject has `FlowFieldConfigAuthoring` component
+- `AgentSpawnerConfig` GameObject has `AgentSpawnerConfigAuthoring` component
+- Agent prefab has `AgentRenderingAuthoring` component + MeshRenderer + MeshFilter
 
 ### ✓ Systems Running
-Open **Window → Entities → Systems** and verify:
+In Play mode, open **Window → Entities → Systems** and verify:
 - `FlowFieldGenerationSystem` (InitializationSystemGroup)
 - `AgentSpawnerSystem` (InitializationSystemGroup)
 - `AgentMovementSystem` (SimulationSystemGroup)
 
 ### ✓ Entities Created
-Open **Window → Entities → Hierarchy** and verify:
-- Entity count matches active agents
-- Entities have components: `Agent`, `AgentVelocity`, `LocalTransform`
+In Play mode, open **Window → Entities → Hierarchy** and verify:
+- Singleton entities: `FlowFieldConfig`, `AgentSpawnerConfig`, `FlowFieldTarget`
+- Agent entities with components: `Agent`, `AgentActive`, `AgentVelocity`, `AgentCellIndex`, `LocalTransform`
+- Entity count matches pool size (not active count - inactive agents are disabled)
 
 ### ✓ Rendering Working
 - Agents should be visible as cubes
-- Check **Window → Analysis → Frame Debugger** to see GPU instancing
+- Check **Window → Analysis → Frame Debugger** to see GPU instancing (1 draw call per unique mesh/material)
 
 ### ✓ Performance Baseline
 With **5000 agents**:
@@ -206,13 +272,13 @@ With **5000 agents**:
 
 ---
 
-## 7. Scaling the Simulation
+## 9. Scaling the Simulation
 
 ### Increase Agent Count
-1. In `FlowFieldBootstrap` Inspector:
+1. In `AgentSpawnerConfigAuthoring` Inspector:
    - Increase `Pool Size` to `50000` or `100000`
    - Adjust `Initial Spawn Count` as needed
-2. Use GUI to spawn more agents dynamically
+2. If using `FlowFieldBootstrap`: Use GUI/keyboard to spawn more agents dynamically
 
 ### Adjust Grid Resolution
 **Coarser Grid (Better Performance):**
@@ -231,22 +297,34 @@ With **5000 agents**:
 
 ---
 
-## 8. Adding Obstacles
+## 10. Adding Obstacles
 
 ### Static Obstacles
 1. **GameObject → 3D Object → Cube** (or any mesh)
 2. Add component: `FlowFieldObstacleAuthoring.cs`
-3. Set **Radius:** `2.0` (cells within radius marked as obstacles)
-4. Position obstacle in grid bounds
-5. Flow field will regenerate when target changes
+3. Set **Radius:** `5.0` (world units - cells within radius marked as impassable)
+4. Position obstacle within grid bounds
+5. **Baking:** Obstacle is converted to ECS entity with `FlowFieldObstacle` component
+6. **Flow field updates:** Obstacles are sampled during flow field generation (when target changes)
+
+**Example Setup:**
+```
+Cube GameObject
+├── Transform: Position (50, 0, 50)
+├── FlowFieldObstacleAuthoring
+│   └── Radius: 5.0
+└── (Optional) MeshRenderer for visualization
+```
 
 ### Dynamic Obstacles
-- Currently: Obstacles are sampled once during flow field generation
-- **To support moving obstacles:** Modify `FlowFieldGenerationSystem` to rebuild periodically (e.g., every 0.5s)
+- **Current behavior:** Obstacles are sampled once during flow field generation
+- **For moving obstacles:**
+  - Option 1: Trigger flow field rebuild by setting `FlowFieldTarget.HasChanged = true`
+  - Option 2: Modify `FlowFieldGenerationSystem` to rebuild periodically (e.g., every 0.5s)
 
 ---
 
-## 9. Package Version Notes
+## 11. Package Version Notes
 
 ### Entities 1.4.3 (Current)
 - **Pros:** Stable LTS, well-documented
@@ -264,23 +342,40 @@ With **5000 agents**:
 
 ---
 
-## 10. Troubleshooting Quick Fixes
+## 12. Troubleshooting Quick Fixes
 
 | **Issue** | **Solution** |
 |-----------|-------------|
-| No agents spawn | Check `Pool Size > 0`, verify prefab has `AgentRenderingAuthoring` |
-| Agents invisible | Ensure material is SRP Batcher compatible, check mesh assigned |
+| No agents spawn | Verify `AgentSpawnerConfigAuthoring` exists, `Pool Size > 0`, `Initial Spawn Count > 0` |
+| Agents invisible | Check prefab has MeshRenderer/MeshFilter, material is SRP Batcher compatible |
+| Baking errors | Check all authoring components are attached, no missing references |
+| No flow field entity | Verify `FlowFieldConfigAuthoring` exists in scene |
 | Low FPS (<30) | Disable Safety Checks in Burst, enable IL2CPP, check Profiler |
 | Burst errors | Enable "Allow 'unsafe' Code" in Player Settings |
-| Flow field doesn't update | Ensure `FlowFieldTarget.HasChanged = true` when changing target |
+| Flow field doesn't update | Set `FlowFieldTarget.HasChanged = true` when changing target |
+| Systems not running | Open Window → Entities → Systems to verify systems are in world |
+
+### Common Baking Issues
+
+**"Entity not found" errors:**
+- Ensure authoring GameObjects are in the scene hierarchy (not disabled)
+- Check that baking completed (no console errors during baking)
+
+**"Singleton not found" errors:**
+- Verify exactly ONE instance of each config authoring component in scene
+- Check Window → Entities → Hierarchy to see baked singletons
+
+**Prefab not converting:**
+- Ensure prefab has authoring component and is NOT in scene
+- AgentSpawnerSystem instantiates prefabs at runtime
 
 ---
 
-## 11. Next Steps
+## 13. Next Steps
 
 - **Read:** `PROFILING_GUIDE.md` for optimization techniques
 - **Read:** `OPTIMIZATION_ROADMAP.md` for performance tuning
-- **Run:** Benchmark script to establish baseline metrics
+- **Read:** `README.md` for architecture deep-dive
 - **Experiment:** Add LOD, frustum culling, or custom avoidance
 
 ---
