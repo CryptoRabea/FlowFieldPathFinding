@@ -43,18 +43,53 @@ namespace FlowFieldPathfinding
 
         private EntityManager _entityManager;
         private Vector3 _lastTargetPosition;
+        private bool _initialized = false;
 
         private void Start()
         {
+            if (World.DefaultGameObjectInjectionWorld == null)
+            {
+                Debug.LogWarning("[FlowFieldBootstrap] ECS World not ready yet. Will initialize on first Update.");
+                return;
+            }
+
             _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
             _lastTargetPosition = targetPosition;
+        }
 
-            // Set initial target
-            SetTargetPosition(targetPosition);
+        private void Initialize()
+        {
+            if (_initialized) return;
+
+            // Check if ECS world is ready
+            if (World.DefaultGameObjectInjectionWorld == null)
+                return;
+
+            if (_entityManager == default)
+                _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
+            // Check if flow field config entity has been baked
+            var query = _entityManager.CreateEntityQuery(typeof(FlowFieldTarget));
+            if (!query.IsEmpty)
+            {
+                _initialized = true;
+                _lastTargetPosition = targetPosition;
+
+                // Set initial target now that entities are baked
+                SetTargetPosition(targetPosition);
+                Debug.Log("[FlowFieldBootstrap] Initialized successfully");
+            }
         }
 
         private void Update()
         {
+            // Initialize if not yet done (waits for baking to complete)
+            if (!_initialized)
+            {
+                Initialize();
+                return;
+            }
+
             // Check if target position changed
             if (updateTargetOnChange && !targetPosition.Equals(_lastTargetPosition))
             {
@@ -69,6 +104,12 @@ namespace FlowFieldPathfinding
         /// </summary>
         public void SetTargetPosition(Vector3 position)
         {
+            if (!_initialized)
+            {
+                Debug.LogWarning("[FlowFieldBootstrap] Not initialized yet. Waiting for baking to complete...");
+                return;
+            }
+
             var query = _entityManager.CreateEntityQuery(typeof(FlowFieldTarget));
             if (query.TryGetSingleton<FlowFieldTarget>(out var target))
             {
@@ -80,7 +121,7 @@ namespace FlowFieldPathfinding
             }
             else
             {
-                Debug.LogWarning("[FlowFieldBootstrap] FlowFieldTarget singleton not found. Add FlowFieldConfigAuthoring to scene.");
+                Debug.LogWarning("[FlowFieldBootstrap] FlowFieldTarget singleton not found. Ensure FlowFieldConfigAuthoring is in scene and baking completed.");
             }
         }
 
@@ -89,6 +130,12 @@ namespace FlowFieldPathfinding
         /// </summary>
         public void SpawnAgents(int count)
         {
+            if (!_initialized)
+            {
+                Debug.LogWarning("[FlowFieldBootstrap] Not initialized yet. Waiting for baking to complete...");
+                return;
+            }
+
             var query = _entityManager.CreateEntityQuery(typeof(AgentSpawnerConfig));
             if (query.TryGetSingleton<AgentSpawnerConfig>(out var config))
             {
@@ -100,7 +147,7 @@ namespace FlowFieldPathfinding
             }
             else
             {
-                Debug.LogWarning("[FlowFieldBootstrap] AgentSpawnerConfig singleton not found. Add AgentSpawnerConfigAuthoring to scene.");
+                Debug.LogWarning("[FlowFieldBootstrap] AgentSpawnerConfig singleton not found. Ensure AgentSpawnerConfigAuthoring is in scene and baking completed.");
             }
         }
 
@@ -117,6 +164,9 @@ namespace FlowFieldPathfinding
         /// </summary>
         public int GetActiveAgentCount()
         {
+            if (!_initialized || _entityManager == default)
+                return 0;
+
             var query = _entityManager.CreateEntityQuery(typeof(AgentSpawnerConfig));
             if (query.TryGetSingleton<AgentSpawnerConfig>(out var config))
             {
@@ -130,6 +180,9 @@ namespace FlowFieldPathfinding
         /// </summary>
         public int GetPoolSize()
         {
+            if (!_initialized || _entityManager == default)
+                return 0;
+
             var query = _entityManager.CreateEntityQuery(typeof(AgentSpawnerConfig));
             if (query.TryGetSingleton<AgentSpawnerConfig>(out var config))
             {
@@ -140,7 +193,7 @@ namespace FlowFieldPathfinding
 
         private void OnDrawGizmos()
         {
-            if (!showFlowField || !Application.isPlaying)
+            if (!showFlowField || !Application.isPlaying || !_initialized || _entityManager == default)
                 return;
 
             // Find flow field entity
@@ -238,12 +291,20 @@ namespace FlowFieldPathfinding
         // Keyboard shortcuts for testing
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(10, 10, 300, 150));
-            GUILayout.Label($"Active Agents: {GetActiveAgentCount()} / {GetPoolSize()}");
-            GUILayout.Label("Controls:");
-            GUILayout.Label("  [Space] - Spawn agents");
-            GUILayout.Label("  [T] - Set target to mouse position");
-            GUILayout.Label("  [F] - Toggle flow field visualization");
+            GUILayout.BeginArea(new Rect(10, 10, 350, 180));
+
+            if (!_initialized)
+            {
+                GUILayout.Label("Initializing... (waiting for baking)");
+            }
+            else
+            {
+                GUILayout.Label($"Active Agents: {GetActiveAgentCount()} / {GetPoolSize()}");
+                GUILayout.Label("Controls:");
+                GUILayout.Label("  [Space] - Spawn agents");
+                GUILayout.Label("  [T] - Set target to mouse position");
+                GUILayout.Label("  [F] - Toggle flow field visualization");
+            }
             GUILayout.EndArea();
 
             if (Event.current.type == EventType.KeyDown)
