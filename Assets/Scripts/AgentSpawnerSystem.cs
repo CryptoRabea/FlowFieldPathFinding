@@ -25,12 +25,12 @@ namespace FlowFieldPathfinding
     public partial struct AgentSpawnerSystem : ISystem
     {
         private bool _poolInitialized;
-        private Random _random;
+        private Unity.Mathematics.Random _random;
 
         public void OnCreate(ref SystemState state)
         {
             state.RequireForUpdate<AgentSpawnerConfig>();
-            _random = Random.CreateFromIndex((uint)System.DateTime.Now.Ticks);
+            _random = Unity.Mathematics.Random.CreateFromIndex((uint)System.DateTime.Now.Ticks);
         }
 
         public void OnUpdate(ref SystemState state)
