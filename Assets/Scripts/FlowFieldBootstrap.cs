@@ -187,27 +187,28 @@ namespace FlowFieldPathfinding
                 _lastTargetPosition = dynamicPosition;
                 targetPosition = dynamicPosition; // Update inspector field too
             }
-            // Otherwise check if static target position changed
-            else if (updateTargetOnChange && !targetPosition.Equals(_lastTargetPosition))
-            // Update target based on assigned object or manual position
-            Vector3 currentTargetPos = GetCurrentTargetPosition();
-
-            // If following a target object
-            if (targetObject != null)
+            else
             {
-                // Check if position changed and update rate allows it
-                if (!currentTargetPos.Equals(_lastTargetPosition) && ShouldUpdateTarget())
+                // Update target based on assigned object or manual position
+                Vector3 currentTargetPos = GetCurrentTargetPosition();
+
+                // If following a target object
+                if (targetObject != null)
+                {
+                    // Check if position changed and update rate allows it
+                    if (!currentTargetPos.Equals(_lastTargetPosition) && ShouldUpdateTarget())
+                    {
+                        SetTargetPosition(currentTargetPos);
+                        _lastTargetPosition = currentTargetPos;
+                        _lastTargetUpdateTime = Time.time;
+                    }
+                }
+                // If using manual position and tracking changes
+                else if (updateTargetOnChange && !currentTargetPos.Equals(_lastTargetPosition))
                 {
                     SetTargetPosition(currentTargetPos);
                     _lastTargetPosition = currentTargetPos;
-                    _lastTargetUpdateTime = Time.time;
                 }
-            }
-            // If using manual position and tracking changes
-            else if (updateTargetOnChange && !currentTargetPos.Equals(_lastTargetPosition))
-            {
-                SetTargetPosition(currentTargetPos);
-                _lastTargetPosition = currentTargetPos;
             }
         }
 
@@ -443,7 +444,7 @@ namespace FlowFieldPathfinding
             else
             {
                 GUILayout.Label($"Active Agents: {GetActiveAgentCount()} / {GetPoolSize()}");
-                
+
                 if (targetObject != null)
                 {
                     GUILayout.Label($"Following: {targetObject.name}");
@@ -453,7 +454,7 @@ namespace FlowFieldPathfinding
                 {
                     GUILayout.Label("Using Manual Position");
                 }
-                
+
                 GUILayout.Label("Controls:");
                 GUILayout.Label("  [Space] - Spawn agents");
                 GUILayout.Label("  [T] - Set target to mouse position");

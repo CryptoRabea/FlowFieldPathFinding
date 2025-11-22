@@ -261,8 +261,8 @@ namespace FlowFieldPathfinding
                 float3 desiredVelocity =
                     flowDirection3D * agent.FlowFollowWeight * agent.Speed +
                     separation * agent.AvoidanceWeight * agent.Speed +
-                    cohesion * agent.CohesionWeight * agent.Speed +
-                    randomOffset * agent.Speed * 0.1f; // Small random component
+                    agent.CohesionWeight * agent.Speed * cohesion +
+                    0.1f * agent.Speed * randomOffset; // Small random component
 
                 // Smooth velocity change for natural movement
                 float3 newVelocity = math.lerp(velocity.Value, desiredVelocity, DeltaTime * 4.0f);

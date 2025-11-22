@@ -55,8 +55,7 @@ public partial class SkinnedMeshAnimationSystem : SystemBase
                 continue;
 
             // Sync position and rotation from entity to GameObject
-            targetTransform.position = localTransform.ValueRO.Position;
-            targetTransform.rotation = localTransform.ValueRO.Rotation;
+            targetTransform.SetPositionAndRotation(localTransform.ValueRO.Position, localTransform.ValueRO.Rotation);
             targetTransform.localScale = new Vector3(
                 localTransform.ValueRO.Scale,
                 localTransform.ValueRO.Scale,
