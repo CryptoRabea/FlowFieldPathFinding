@@ -10,10 +10,18 @@ namespace FlowFieldPathfinding
     /// Authoring component to add physics colliders to agent entities.
     /// Attach this to your agent prefab alongside AgentRenderingAuthoring.
     ///
-    /// The collider enables:
-    /// - Physical collision detection with obstacles and other agents
+    /// ⚠️ PERFORMANCE WARNING:
+    /// For most flow field use cases, physics is NOT needed!
+    /// The AgentMovementSystem handles all movement through transform updates.
+    /// Adding physics components may REDUCE performance significantly.
+    ///
+    /// Only use physics if you need:
+    /// - Collision detection with non-agent objects
     /// - Raycasting and overlap queries
     /// - Trigger events
+    ///
+    /// For 1000+ agents: Use AgentRenderingAuthoring WITHOUT this component
+    /// for best performance (60+ FPS vs 10 FPS with physics).
     /// </summary>
     public class AgentPhysicsAuthoring : MonoBehaviour
     {
