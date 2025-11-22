@@ -119,6 +119,7 @@ namespace FlowFieldPathfinding
 
     /// <summary>
     /// Singleton configuration for agent spawning system.
+    /// Agent attributes (speed, weights) are defined on the prefab, not here.
     /// </summary>
     public struct AgentSpawnerConfig : IComponentData
     {
@@ -132,18 +133,6 @@ namespace FlowFieldPathfinding
 
         /// <summary>Spawn area radius</summary>
         public float SpawnRadius;
-
-        /// <summary>Default agent speed</summary>
-        public float DefaultSpeed;
-
-        /// <summary>Default avoidance weight</summary>
-        public float DefaultAvoidanceWeight;
-
-        /// <summary>Default flow follow weight</summary>
-        public float DefaultFlowFollowWeight;
-
-        /// <summary>Default cohesion weight for zombie swarming</summary>
-        public float DefaultCohesionWeight;
 
         /// <summary>Flag to request spawning</summary>
         public bool SpawnRequested;

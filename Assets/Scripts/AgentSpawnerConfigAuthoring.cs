@@ -24,22 +24,6 @@ namespace FlowFieldPathfinding
         [Tooltip("Radius of the spawn area")]
         public float spawnRadius = 20f;
 
-        [Header("Default Agent Settings")]
-        [Tooltip("Default agent speed")]
-        public float defaultSpeed = 5f;
-
-        [Tooltip("Default avoidance weight (0-1) - prevents overlapping")]
-        [Range(0f, 1f)]
-        public float defaultAvoidanceWeight = 0.8f;
-
-        [Tooltip("Default flow follow weight (0-1) - follows path")]
-        [Range(0f, 1f)]
-        public float defaultFlowFollowWeight = 0.7f;
-
-        [Tooltip("Default cohesion weight (0-1) - groups together")]
-        [Range(0f, 1f)]
-        public float defaultCohesionWeight = 0.2f;
-
         private class Baker : Baker<AgentSpawnerConfigAuthoring>
         {
             public override void Bake(AgentSpawnerConfigAuthoring authoring)
@@ -51,10 +35,6 @@ namespace FlowFieldPathfinding
                     InitialSpawnCount = authoring.initialSpawnCount,
                     SpawnCenter = authoring.spawnCenter,
                     SpawnRadius = authoring.spawnRadius,
-                    DefaultSpeed = authoring.defaultSpeed,
-                    DefaultAvoidanceWeight = authoring.defaultAvoidanceWeight,
-                    DefaultFlowFollowWeight = authoring.defaultFlowFollowWeight,
-                    DefaultCohesionWeight = authoring.defaultCohesionWeight,
                     SpawnRequested = false,
                     SpawnCount = 0,
                     ActiveCount = 0
