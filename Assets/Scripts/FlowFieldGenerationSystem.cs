@@ -22,6 +22,7 @@ namespace FlowFieldPathfinding
     {
         private Entity _flowFieldEntity;
         private bool _initialized;
+        private bool _firstRegeneration; // Flag to force first regeneration
         private float3 _lastTargetPosition;
         private double _lastRegenerationTime;
 
@@ -46,6 +47,7 @@ namespace FlowFieldPathfinding
                 InitializeFlowFieldEntity(ref state, config);
                 _lastTargetPosition = target.Position;
                 _lastRegenerationTime = SystemAPI.Time.ElapsedTime;
+                _firstRegeneration = true; // Force first regeneration
                 _initialized = true;
             }
 
@@ -53,26 +55,33 @@ namespace FlowFieldPathfinding
             if (!target.HasChanged)
                 return;
 
-            // Throttling: Check if target moved far enough and enough time passed
-            float distanceMoved = math.distance(target.Position, _lastTargetPosition);
-            double timeSinceLastRegen = SystemAPI.Time.ElapsedTime - _lastRegenerationTime;
-
-            bool shouldRegenerate = distanceMoved >= MIN_TARGET_MOVE_DISTANCE ||
-                                   timeSinceLastRegen >= MIN_REGENERATION_INTERVAL * 5.0; // Force regen after 1 second even if not moved much
-
-            // If first frame or target moved enough, regenerate
-            if (_lastRegenerationTime == 0 || shouldRegenerate)
+            // Always regenerate on first target change after initialization
+            if (_firstRegeneration)
             {
-                // Update tracking variables
+                _firstRegeneration = false;
                 _lastTargetPosition = target.Position;
                 _lastRegenerationTime = SystemAPI.Time.ElapsedTime;
             }
             else
             {
-                // Skip regeneration, but still reset the flag
-                target.HasChanged = false;
-                SystemAPI.SetSingleton(target);
-                return;
+                // Throttling: Check if target moved far enough or enough time passed
+                float distanceMoved = math.distance(target.Position, _lastTargetPosition);
+                double timeSinceLastRegen = SystemAPI.Time.ElapsedTime - _lastRegenerationTime;
+
+                bool shouldRegenerate = distanceMoved >= MIN_TARGET_MOVE_DISTANCE ||
+                                       timeSinceLastRegen >= MIN_REGENERATION_INTERVAL * 5.0; // Force regen after 1 second
+
+                if (!shouldRegenerate)
+                {
+                    // Skip regeneration, but still reset the flag
+                    target.HasChanged = false;
+                    SystemAPI.SetSingleton(target);
+                    return;
+                }
+
+                // Update tracking variables
+                _lastTargetPosition = target.Position;
+                _lastRegenerationTime = SystemAPI.Time.ElapsedTime;
             }
 
             // Reset the changed flag
