@@ -7,6 +7,10 @@ namespace FlowFieldPathfinding
     /// <summary>
     /// Authoring component for flow field configuration singleton.
     /// Add to a GameObject in your scene to configure the pathfinding grid.
+    ///
+    /// NOTE: This only configures GRID SETTINGS (size, cell size, costs).
+    /// To set the TARGET position at runtime, use FlowFieldBootstrap.SetTargetPosition() or
+    /// set FlowFieldBootstrap.targetPosition in the Inspector.
     /// </summary>
     public class FlowFieldConfigAuthoring : MonoBehaviour
     {
@@ -22,10 +26,6 @@ namespace FlowFieldPathfinding
 
         [Tooltip("Bottom-left corner of the grid in world space")]
         public Vector3 gridOrigin = new Vector3(-100, 0, -100);
-
-        [Header("Target Settings")]
-        [Tooltip("Initial target position for agents to move toward")]
-        public Vector3 targetPosition = new Vector3(50, 0, 50);
 
         [Header("Cost Settings")]
         [Tooltip("Cost value for impassable obstacle cells")]
@@ -44,7 +44,7 @@ namespace FlowFieldPathfinding
             {
                 var entity = GetEntity(TransformUsageFlags.None);
 
-                // Create flow field config singleton
+                // Create flow field config singleton (grid settings only)
                 AddComponent(entity, new FlowFieldConfig
                 {
                     GridWidth = authoring.gridWidth,
@@ -56,11 +56,11 @@ namespace FlowFieldPathfinding
                     DirectionSmoothFactor = authoring.directionSmoothFactor
                 });
 
-                // Create flow field target singleton
+                // Create flow field target singleton (will be set by FlowFieldBootstrap at runtime)
                 AddComponent(entity, new FlowFieldTarget
                 {
-                    Position = authoring.targetPosition,
-                    HasChanged = true // Trigger initial generation
+                    Position = float3.zero,
+                    HasChanged = false // Bootstrap will set the initial target
                 });
             }
         }
