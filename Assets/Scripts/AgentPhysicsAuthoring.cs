@@ -84,6 +84,15 @@ namespace FlowFieldPathfinding
                 if (GetComponent<Rigidbody>() != null)
                     return;
 
+                // Skip if there are Unity colliders on the same GameObject (to avoid conflicts with built-in bakers)
+                // unless we're using composite mode (which uses child colliders)
+                if (!authoring.useComposite && GetComponent<UnityEngine.Collider>() != null)
+                {
+                    UnityEngine.Debug.LogWarning($"[AgentPhysicsAuthoring] GameObject '{authoring.name}' has Unity colliders. " +
+                        "Either enable 'useComposite' to combine child colliders, or remove Unity colliders to use AgentPhysicsAuthoring's built-in collider creation.");
+                    return;
+                }
+
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
 
                 // Create collision filter
@@ -210,7 +219,7 @@ namespace FlowFieldPathfinding
             private BlobAssetReference<Unity.Physics.Collider> CreateCompositeCollider(
                 AgentPhysicsAuthoring authoring, CollisionFilter filter, Unity.Physics.Material material)
             {
-                // Get all child colliders
+                // Get all child colliders (excluding those on the authoring GameObject itself)
                 var childColliders = new System.Collections.Generic.List<UnityEngine.Collider>();
                 authoring.GetComponentsInChildren<UnityEngine.Collider>(childColliders);
 
@@ -226,8 +235,8 @@ namespace FlowFieldPathfinding
 
                 foreach (var childCollider in childColliders)
                 {
-                    // Skip if disabled
-                    if (!childCollider.enabled)
+                    // Skip if disabled or on the authoring GameObject itself (to avoid conflicts with Unity's built-in bakers)
+                    if (!childCollider.enabled || childCollider.gameObject == authoring.gameObject)
                         continue;
 
                     BlobAssetReference<Unity.Physics.Collider> childBlob = default;
