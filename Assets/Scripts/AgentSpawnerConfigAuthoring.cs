@@ -28,17 +28,17 @@ namespace FlowFieldPathfinding
         [Tooltip("Default agent speed")]
         public float defaultSpeed = 5f;
 
-        [Tooltip("Default avoidance weight (0-1)")]
+        [Tooltip("Default avoidance weight (0-1) - prevents overlapping")]
         [Range(0f, 1f)]
-        public float defaultAvoidanceWeight = 0.5f;
+        public float defaultAvoidanceWeight = 0.8f;
 
-        [Tooltip("Default flow follow weight (0-1)")]
+        [Tooltip("Default flow follow weight (0-1) - follows path")]
         [Range(0f, 1f)]
-        public float defaultFlowFollowWeight = 1.0f;
+        public float defaultFlowFollowWeight = 0.7f;
 
-        [Tooltip("Default cohesion weight (0-1) - zombies group together")]
+        [Tooltip("Default cohesion weight (0-1) - groups together")]
         [Range(0f, 1f)]
-        public float defaultCohesionWeight = 0.3f;
+        public float defaultCohesionWeight = 0.2f;
 
         private class Baker : Baker<AgentSpawnerConfigAuthoring>
         {
