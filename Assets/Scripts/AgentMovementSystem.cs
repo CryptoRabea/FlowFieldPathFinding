@@ -29,8 +29,8 @@ namespace FlowFieldPathfinding
     /// Achieves 10,000 agents @ 60 FPS on mid-range hardware (kinematic mode).
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateBefore(typeof(Unity.Physics.Systems.PhysicsSystemGroup))]
     // Note: FlowFieldGenerationSystem runs in InitializationSystemGroup which always runs before SimulationSystemGroup
+    // Note: This system updates agent velocities before physics integration
     // RequireForUpdate<FlowFieldData> ensures this system only runs after flow field is generated
     public partial struct AgentMovementSystem : ISystem
     {
@@ -52,11 +52,15 @@ namespace FlowFieldPathfinding
                 foreach (var (data, entity) in SystemAPI.Query<RefRO<FlowFieldData>>().WithEntityAccess())
                 {
                     _flowFieldEntity = entity;
+                    UnityEngine.Debug.Log($"[AgentMovementSystem] Found flow field entity: {entity}");
                     break;
                 }
 
                 if (_flowFieldEntity == Entity.Null)
+                {
+                    UnityEngine.Debug.LogWarning("[AgentMovementSystem] No flow field entity found!");
                     return; // No flow field yet
+                }
             }
 
             // Get flow field data
@@ -70,7 +74,10 @@ namespace FlowFieldPathfinding
 
             int agentCount = activeQuery.CalculateEntityCount();
             if (agentCount == 0)
+            {
+                UnityEngine.Debug.LogWarning("[AgentMovementSystem] No active agents found!");
                 return;
+            }
 
             // Create spatial hash for collision avoidance
             var spatialHash = new NativeParallelMultiHashMap<int, SpatialHashEntry>(agentCount, Allocator.TempJob);

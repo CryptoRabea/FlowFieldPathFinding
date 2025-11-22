@@ -56,10 +56,15 @@ namespace FlowFieldPathfinding
 
         private void SpawnAgents(int count, ref AgentSpawnerConfig config)
         {
+            Entity firstEntity = Entity.Null;
+
             for (int i = 0; i < count; i++)
             {
                 // Instantiate prefab - all Agent component values come from the prefab
                 var entity = EntityManager.Instantiate(_prefabEntity);
+
+                if (i == 0)
+                    firstEntity = entity;
 
                 // Randomize spawn position within radius
                 float2 randomOffset = _random.NextFloat2Direction() * _random.NextFloat(0f, config.SpawnRadius);
@@ -75,7 +80,19 @@ namespace FlowFieldPathfinding
             }
 
             config.ActiveCount += count;
-            Debug.Log($"[AgentSpawnerSystem] Spawned {count} agents. Total active: {config.ActiveCount}");
+
+            // Debug: Log first agent's component values
+            if (firstEntity != Entity.Null && EntityManager.HasComponent<Agent>(firstEntity))
+            {
+                var agent = EntityManager.GetComponentData<Agent>(firstEntity);
+                Debug.Log($"[AgentSpawnerSystem] Spawned {count} agents. Total active: {config.ActiveCount}");
+                Debug.Log($"[AgentSpawnerSystem] First agent - Speed: {agent.Speed}, FlowFollow: {agent.FlowFollowWeight}, Avoidance: {agent.AvoidanceWeight}, Cohesion: {agent.CohesionWeight}");
+            }
+            else
+            {
+                Debug.LogError($"[AgentSpawnerSystem] Spawned {count} agents but first agent has NO Agent component!");
+                config.ActiveCount += count;
+            }
         }
     }
 }

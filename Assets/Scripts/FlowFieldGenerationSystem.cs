@@ -13,13 +13,21 @@ namespace FlowFieldPathfinding
     /// 2. Build Integration Field - Dijkstra wavefront expansion from destination
     /// 3. Build Flow Direction Field - Calculate gradient-based movement directions
     ///
-    /// Only regenerates when FlowFieldTarget.HasChanged is true for performance.
+    /// Supports dynamic moving targets with smart throttling:
+    /// - Only regenerates if target moved beyond threshold distance
+    /// - Minimum time between regenerations to prevent performance issues
     /// </summary>
     [UpdateInGroup(typeof(InitializationSystemGroup))]
     public partial struct FlowFieldGenerationSystem : ISystem
     {
         private Entity _flowFieldEntity;
         private bool _initialized;
+        private float3 _lastTargetPosition;
+        private double _lastRegenerationTime;
+
+        // Throttling settings
+        private const float MIN_TARGET_MOVE_DISTANCE = 2.0f; // Only regenerate if target moved this far (in world units)
+        private const float MIN_REGENERATION_INTERVAL = 0.2f; // Minimum time between regenerations (in seconds)
 
         public void OnCreate(ref SystemState state)
         {
@@ -36,12 +44,36 @@ namespace FlowFieldPathfinding
             if (!_initialized)
             {
                 InitializeFlowFieldEntity(ref state, config);
+                _lastTargetPosition = target.Position;
+                _lastRegenerationTime = SystemAPI.Time.ElapsedTime;
                 _initialized = true;
             }
 
             // Only regenerate when target changes
             if (!target.HasChanged)
                 return;
+
+            // Throttling: Check if target moved far enough and enough time passed
+            float distanceMoved = math.distance(target.Position, _lastTargetPosition);
+            double timeSinceLastRegen = SystemAPI.Time.ElapsedTime - _lastRegenerationTime;
+
+            bool shouldRegenerate = distanceMoved >= MIN_TARGET_MOVE_DISTANCE ||
+                                   timeSinceLastRegen >= MIN_REGENERATION_INTERVAL * 5.0; // Force regen after 1 second even if not moved much
+
+            // If first frame or target moved enough, regenerate
+            if (_lastRegenerationTime == 0 || shouldRegenerate)
+            {
+                // Update tracking variables
+                _lastTargetPosition = target.Position;
+                _lastRegenerationTime = SystemAPI.Time.ElapsedTime;
+            }
+            else
+            {
+                // Skip regeneration, but still reset the flag
+                target.HasChanged = false;
+                SystemAPI.SetSingleton(target);
+                return;
+            }
 
             // Reset the changed flag
             target.HasChanged = false;
@@ -64,6 +96,8 @@ namespace FlowFieldPathfinding
 
             // Convert target position to grid cell
             int2 destCell = WorldToGrid(target.Position, config.GridOrigin, config.CellSize, config.GridWidth, config.GridHeight);
+
+            UnityEngine.Debug.Log($"[FlowFieldGenerationSystem] Regenerating flow field for target at ({target.Position.x:F1}, {target.Position.y:F1}, {target.Position.z:F1})");
 
             // Update FlowFieldData
             var flowFieldData = SystemAPI.GetComponent<FlowFieldData>(_flowFieldEntity);

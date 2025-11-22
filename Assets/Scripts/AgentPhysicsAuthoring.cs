@@ -113,6 +113,7 @@ namespace FlowFieldPathfinding
                     CollisionResponse = CollisionResponsePolicy.Collide
                 };
 
+                // Create collider - Unity's baking system handles BlobAsset lifecycle
                 BlobAssetReference<Unity.Physics.Collider> colliderBlob;
 
                 if (authoring.useComposite)
@@ -126,7 +127,14 @@ namespace FlowFieldPathfinding
                     colliderBlob = CreateSingleCollider(authoring, filter, material);
                 }
 
-                // Add physics collider component
+                // Only add if valid
+                if (!colliderBlob.IsCreated)
+                {
+                    UnityEngine.Debug.LogError($"[AgentPhysicsAuthoring] Failed to create collider for {authoring.name}");
+                    return;
+                }
+
+                // Add physics collider component - Unity's baking manages BlobAsset disposal
                 AddComponent(entity, new PhysicsCollider
                 {
                     Value = colliderBlob

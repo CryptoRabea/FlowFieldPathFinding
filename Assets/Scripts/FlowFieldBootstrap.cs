@@ -40,6 +40,13 @@ namespace FlowFieldPathfinding
         [Tooltip("Update target when manual position field changes")]
         public bool updateTargetOnChange = true;
 
+        [Header("Dynamic Target Tracking")]
+        [Tooltip("Optional: Assign a GameObject to track its position as the target")]
+        public Transform dynamicTarget;
+
+        [Tooltip("If true, agents will continuously follow the dynamicTarget's position")]
+        public bool followDynamicTarget = false;
+
         [Header("Spawn Controls")]
         [Tooltip("Number of agents to spawn when SpawnAgents() is called")]
         public int spawnCount = 1000;
@@ -171,6 +178,17 @@ namespace FlowFieldPathfinding
                 return;
             }
 
+            // Track dynamic target if enabled
+            if (followDynamicTarget && dynamicTarget != null)
+            {
+                Vector3 dynamicPosition = dynamicTarget.position;
+                // Always update when following a dynamic target (throttling happens in FlowFieldGenerationSystem)
+                SetTargetPosition(dynamicPosition);
+                _lastTargetPosition = dynamicPosition;
+                targetPosition = dynamicPosition; // Update inspector field too
+            }
+            // Otherwise check if static target position changed
+            else if (updateTargetOnChange && !targetPosition.Equals(_lastTargetPosition))
             // Update target based on assigned object or manual position
             Vector3 currentTargetPos = GetCurrentTargetPosition();
 
