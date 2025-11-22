@@ -58,22 +58,20 @@ namespace FlowFieldPathfinding
         {
             for (int i = 0; i < count; i++)
             {
+                // Instantiate prefab - all Agent component values come from the prefab
                 var entity = EntityManager.Instantiate(_prefabEntity);
 
+                // Randomize spawn position within radius
                 float2 randomOffset = _random.NextFloat2Direction() * _random.NextFloat(0f, config.SpawnRadius);
                 float3 spawnPosition = config.SpawnCenter + new float3(randomOffset.x, 0, randomOffset.y);
 
+                // Override only position-related components
                 EntityManager.SetComponentData(entity, LocalTransform.FromPositionRotationScale(
                     spawnPosition, quaternion.identity, _prefabScale));
                 EntityManager.SetComponentData(entity, new AgentVelocity { Value = float3.zero });
                 EntityManager.SetComponentData(entity, new AgentCellIndex { Value = -1 });
-                EntityManager.SetComponentData(entity, new Agent
-                {
-                    Speed = config.DefaultSpeed,
-                    AvoidanceWeight = config.DefaultAvoidanceWeight,
-                    FlowFollowWeight = config.DefaultFlowFollowWeight,
-                    CohesionWeight = config.DefaultCohesionWeight
-                });
+
+                // Agent component (speed, weights) is inherited from prefab - no override needed
             }
 
             config.ActiveCount += count;
