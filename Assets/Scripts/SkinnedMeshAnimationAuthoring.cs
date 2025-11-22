@@ -35,8 +35,13 @@ public class SkinnedMeshAnimationAuthoring : MonoBehaviour
             AddComponentObject(entity, new SkinnedMeshReference
             {
                 Animator = authoring.animator != null ? authoring.animator : authoring.GetComponent<Animator>(),
-                SourceGameObject = authoring.gameObject
+                SourceGameObject = authoring.gameObject,
+                PrefabGameObject = authoring.gameObject // Store for spawning copies
             });
+
+            // IMPORTANT: Do not add rendering components (MaterialMeshInfo, RenderMesh, etc.)
+            // The hybrid approach uses the GameObject's SkinnedMeshRenderer directly
+            // This prevents the "shader does not support skinning" warning
         }
     }
 }
@@ -58,6 +63,7 @@ public struct SkinnedMeshAnimation : IComponentData
 public class SkinnedMeshReference : IComponentData
 {
     public Animator Animator;
-    public GameObject SourceGameObject;
-    public GameObject RuntimeInstance; // Instantiated at runtime for pooled entities
+    public GameObject SourceGameObject; // Original GameObject from scene/prefab
+    public GameObject RuntimeInstance; // Instantiated copy for spawned entities
+    public GameObject PrefabGameObject; // Template for creating new instances
 }
