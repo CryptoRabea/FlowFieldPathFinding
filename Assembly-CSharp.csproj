@@ -75,17 +75,19 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\PerformanceBenchmark.cs" />
     <Compile Include="Assets\Scripts\AgentSpawnerSystem.cs" />
-    <Compile Include="Assets\NewBakerScript.cs" />
     <Compile Include="Assets\Scripts\FlowFieldConfigAuthoring.cs" />
     <Compile Include="Assets\Scripts\FlowFieldGenerationSystem.cs" />
     <Compile Include="Assets\Scripts\AgentMovementSystem.cs" />
-    <Compile Include="Assets\NewIComponentDataScript.cs" />
-    <Compile Include="Assets\NewISystemScript.cs" />
+    <Compile Include="Assets\Scripts\PhysicsOptimizer.cs" />
+    <Compile Include="Assets\Scripts\AgentRigidbodyOptimizer.cs" />
     <Compile Include="Assets\Scripts\FlowFieldComponents.cs" />
-    <Compile Include="Assets\NewIJobEntityScript.cs" />
     <Compile Include="Assets\Scripts\AgentRenderingAuthoring.cs" />
     <Compile Include="Assets\Scripts\FlowFieldVisualization.cs" />
+    <Compile Include="Assets\Scripts\SkinnedMeshAnimationSystem.cs" />
+    <Compile Include="Assets\FPSCounter.cs" />
     <Compile Include="Assets\Scripts\FlowFieldObstacleAuthoring.cs" />
+    <Compile Include="Assets\Scripts\SkinnedMeshAnimationAuthoring.cs" />
+    <Compile Include="Assets\Scripts\PerformanceGuide.cs" />
     <Compile Include="Assets\Scripts\FlowFieldBootstrap.cs" />
     <Compile Include="Assets\InputSystem_Actions.cs" />
     <Compile Include="Assets\Scripts\FlockingVisualization.cs" />
@@ -94,6 +96,7 @@
     <Compile Include="Assets\Scripts\PlayerMovement.cs" />
     <Compile Include="Assets\Scripts\RTSCameraController.cs" />
     <Compile Include="Assets\Scripts\AgentPhysicsAuthoring.cs" />
+    <Compile Include="Assets\Scripts\PerformanceMonitor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\ArtStore3D\Zombie Cartoon\Readme.txt" />

@@ -8,7 +8,8 @@ namespace FlowFieldPathfinding
     /// MonoBehaviour controller for runtime management of the flow field and agent spawning.
     ///
     /// Features:
-    /// - Set target position to update agent destination
+    /// - Follow a target GameObject/Transform automatically
+    /// - Set target position manually to update agent destination
     /// - Spawn/despawn agents dynamically
     /// - Query active agent count
     /// - Toggle debug visualization
@@ -16,15 +17,27 @@ namespace FlowFieldPathfinding
     /// Usage:
     /// 1. Add FlowFieldConfigAuthoring and AgentSpawnerConfigAuthoring to GameObjects in scene
     /// 2. Attach this script to any GameObject
-    /// 3. Use public methods or UI to control the system
+    /// 3. Assign a target object OR use manual position
+    /// 4. Use public methods or UI to control the system
     /// </summary>
     public class FlowFieldBootstrap : MonoBehaviour
     {
-        [Header("Runtime Controls")]
-        [Tooltip("Target position for agents to move toward")]
+        [Header("Target Settings")]
+        [Tooltip("Target object to follow (if assigned, overrides manual position)")]
+        public Transform targetObject;
+
+        [Tooltip("Use Y position from target object (if false, uses Y=0)")]
+        public bool useTargetYPosition = false;
+
+        [Tooltip("Update frequency when following target object (updates per second, 0 = every frame)")]
+        [Range(0, 60)]
+        public float targetUpdateRate = 10f;
+
+        [Header("Manual Target Position")]
+        [Tooltip("Manual target position (used when targetObject is not assigned)")]
         public Vector3 targetPosition = new Vector3(50, 0, 50);
 
-        [Tooltip("Update target when this field changes")]
+        [Tooltip("Update target when manual position field changes")]
         public bool updateTargetOnChange = true;
 
         [Header("Spawn Controls")]
@@ -43,6 +56,7 @@ namespace FlowFieldPathfinding
 
         private EntityManager _entityManager;
         private Vector3 _lastTargetPosition;
+        private float _lastTargetUpdateTime;
         private bool _initialized = false;
 
         private void Start()
@@ -54,7 +68,7 @@ namespace FlowFieldPathfinding
             }
 
             _entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-            _lastTargetPosition = targetPosition;
+            _lastTargetPosition = GetCurrentTargetPosition();
         }
 
         private float _initializationAttemptTime = 0f;
@@ -102,10 +116,10 @@ namespace FlowFieldPathfinding
             if (!query.IsEmpty)
             {
                 _initialized = true;
-                _lastTargetPosition = targetPosition;
+                _lastTargetPosition = GetCurrentTargetPosition();
 
                 // Set initial target now that entities are baked
-                SetTargetPosition(targetPosition);
+                SetTargetPosition(_lastTargetPosition);
                 Debug.Log($"[FlowFieldBootstrap] Initialized successfully after {_initializationAttempts} attempts");
             }
             else
@@ -119,6 +133,35 @@ namespace FlowFieldPathfinding
             }
         }
 
+        /// <summary>
+        /// Get the current target position based on assigned target object or manual position.
+        /// </summary>
+        private Vector3 GetCurrentTargetPosition()
+        {
+            if (targetObject != null)
+            {
+                Vector3 pos = targetObject.position;
+                if (!useTargetYPosition)
+                {
+                    pos.y = 0;
+                }
+                return pos;
+            }
+            return targetPosition;
+        }
+
+        /// <summary>
+        /// Check if we should update the target this frame based on update rate.
+        /// </summary>
+        private bool ShouldUpdateTarget()
+        {
+            if (targetUpdateRate <= 0)
+                return true; // Update every frame
+
+            float timeSinceLastUpdate = Time.time - _lastTargetUpdateTime;
+            return timeSinceLastUpdate >= (1f / targetUpdateRate);
+        }
+
         private void Update()
         {
             // Initialize if not yet done (waits for baking to complete)
@@ -128,11 +171,25 @@ namespace FlowFieldPathfinding
                 return;
             }
 
-            // Check if target position changed
-            if (updateTargetOnChange && !targetPosition.Equals(_lastTargetPosition))
+            // Update target based on assigned object or manual position
+            Vector3 currentTargetPos = GetCurrentTargetPosition();
+
+            // If following a target object
+            if (targetObject != null)
             {
-                SetTargetPosition(targetPosition);
-                _lastTargetPosition = targetPosition;
+                // Check if position changed and update rate allows it
+                if (!currentTargetPos.Equals(_lastTargetPosition) && ShouldUpdateTarget())
+                {
+                    SetTargetPosition(currentTargetPos);
+                    _lastTargetPosition = currentTargetPos;
+                    _lastTargetUpdateTime = Time.time;
+                }
+            }
+            // If using manual position and tracking changes
+            else if (updateTargetOnChange && !currentTargetPos.Equals(_lastTargetPosition))
+            {
+                SetTargetPosition(currentTargetPos);
+                _lastTargetPosition = currentTargetPos;
             }
         }
 
@@ -161,6 +218,27 @@ namespace FlowFieldPathfinding
             {
                 Debug.LogWarning("[FlowFieldBootstrap] FlowFieldTarget singleton not found. Ensure FlowFieldConfigAuthoring is in scene and baking completed.");
             }
+        }
+
+        /// <summary>
+        /// Set a new target object to follow.
+        /// </summary>
+        public void SetTargetObject(Transform target)
+        {
+            targetObject = target;
+            if (target != null && _initialized)
+            {
+                _lastTargetPosition = GetCurrentTargetPosition();
+                SetTargetPosition(_lastTargetPosition);
+            }
+        }
+
+        /// <summary>
+        /// Clear the target object and use manual position instead.
+        /// </summary>
+        public void ClearTargetObject()
+        {
+            targetObject = null;
         }
 
         /// <summary>
@@ -313,6 +391,15 @@ namespace FlowFieldPathfinding
             Gizmos.DrawLine(new Vector3(max.x, 0, min.z), new Vector3(max.x, 0, max.z));
             Gizmos.DrawLine(new Vector3(max.x, 0, max.z), new Vector3(min.x, 0, max.z));
             Gizmos.DrawLine(new Vector3(min.x, 0, max.z), new Vector3(min.x, 0, min.z));
+
+            // Draw line from target object if assigned
+            if (targetObject != null)
+            {
+                Gizmos.color = Color.green;
+                Vector3 objPos = targetObject.position;
+                Gizmos.DrawWireCube(objPos, Vector3.one * 2f);
+                Gizmos.DrawLine(objPos, targetPosition);
+            }
         }
 
         // UI Button callbacks
@@ -329,7 +416,7 @@ namespace FlowFieldPathfinding
         // Keyboard shortcuts for testing
         private void OnGUI()
         {
-            GUILayout.BeginArea(new Rect(10, 10, 350, 180));
+            GUILayout.BeginArea(new Rect(10, 10, 400, 220));
 
             if (!_initialized)
             {
@@ -338,6 +425,17 @@ namespace FlowFieldPathfinding
             else
             {
                 GUILayout.Label($"Active Agents: {GetActiveAgentCount()} / {GetPoolSize()}");
+                
+                if (targetObject != null)
+                {
+                    GUILayout.Label($"Following: {targetObject.name}");
+                    GUILayout.Label($"Target Position: {GetCurrentTargetPosition()}");
+                }
+                else
+                {
+                    GUILayout.Label("Using Manual Position");
+                }
+                
                 GUILayout.Label("Controls:");
                 GUILayout.Label("  [Space] - Spawn agents");
                 GUILayout.Label("  [T] - Set target to mouse position");

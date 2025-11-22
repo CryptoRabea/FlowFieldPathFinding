@@ -10,22 +10,23 @@ namespace FlowFieldPathfinding
     /// Authoring component to add physics colliders to agent entities.
     /// Attach this to your agent prefab alongside AgentRenderingAuthoring.
     ///
-    /// Supports:
-    /// - Composite colliders (multiple child colliders combined)
-    /// - Dynamic rigidbodies with mass and gravity
-    /// - Full physics interactions with other objects
-    ///
     /// ⚠️ PERFORMANCE WARNING:
-    /// Physics simulation can be expensive with many agents.
-    /// Use physics only if you need actual collision response and gravity.
+    /// For most flow field use cases, physics is NOT needed!
+    /// The AgentMovementSystem handles all movement through transform updates.
+    /// Adding physics components may REDUCE performance significantly.
+    ///
+    /// Only use physics if you need:
+    /// - Collision detection with non-agent objects
+    /// - Raycasting and overlap queries
+    /// - Trigger events
+    ///
+    /// For 1000+ agents: Use AgentRenderingAuthoring WITHOUT this component
+    /// for best performance (60+ FPS vs 10 FPS with physics).
     /// </summary>
     public class AgentPhysicsAuthoring : MonoBehaviour
     {
         [Header("Collider Settings")]
-        [Tooltip("Use composite collider (combines child colliders)")]
-        public bool useComposite = false;
-
-        [Tooltip("Collider shape type (ignored if useComposite is true)")]
+        [Tooltip("Collider shape type")]
         public ColliderType colliderType = ColliderType.Box;
 
         [Tooltip("Size of the collider (for box) or radius (for sphere)")]
@@ -33,25 +34,6 @@ namespace FlowFieldPathfinding
 
         [Tooltip("Sphere radius (only used if colliderType is Sphere)")]
         public float radius = 0.5f;
-
-        [Header("Rigidbody Settings")]
-        [Tooltip("Use dynamic rigidbody (simulated by physics) instead of kinematic")]
-        public bool isDynamic = true;
-
-        [Tooltip("Mass of the rigidbody (kg)")]
-        [Range(0.1f, 100f)]
-        public float mass = 1f;
-
-        [Tooltip("Linear damping (air resistance)")]
-        [Range(0f, 10f)]
-        public float linearDamping = 0.01f;
-
-        [Tooltip("Angular damping (rotation resistance)")]
-        [Range(0f, 10f)]
-        public float angularDamping = 0.05f;
-
-        [Tooltip("Use gravity")]
-        public bool useGravity = true;
 
         [Header("Physics Material")]
         [Tooltip("Friction coefficient")]
@@ -115,73 +97,10 @@ namespace FlowFieldPathfinding
 
                 BlobAssetReference<Unity.Physics.Collider> colliderBlob;
 
-                if (authoring.useComposite)
-                {
-                    // Create composite collider from child colliders
-                    colliderBlob = CreateCompositeCollider(authoring, filter, material);
-                }
-                else
-                {
-                    // Create single collider
-                    colliderBlob = CreateSingleCollider(authoring, filter, material);
-                }
-
-                // Add physics collider component
-                AddComponent(entity, new PhysicsCollider
-                {
-                    Value = colliderBlob
-                });
-
-                // Add physics velocity for dynamic bodies
-                AddComponent(entity, new PhysicsVelocity());
-
-                // Add mass properties
-                if (authoring.isDynamic)
-                {
-                    // Create dynamic rigidbody with mass and gravity
-                    var massProperties = colliderBlob.Value.MassProperties;
-
-                    // Scale mass properties by desired mass
-                    var physicsMass = PhysicsMass.CreateDynamic(massProperties, authoring.mass);
-
-                    // Apply damping
-                    physicsMass.InverseMass = 1.0f / authoring.mass;
-                    physicsMass.AngularExpansionFactor = 0f; // Prevent rotation from expanding collider
-
-                    AddComponent(entity, physicsMass);
-
-                    // Add gravity factor
-                    if (authoring.useGravity)
-                    {
-                        AddComponent(entity, new PhysicsGravityFactor { Value = 1f });
-                    }
-                    else
-                    {
-                        AddComponent(entity, new PhysicsGravityFactor { Value = 0f });
-                    }
-
-                    // Add damping
-                    AddComponent(entity, new PhysicsDamping
-                    {
-                        Linear = authoring.linearDamping,
-                        Angular = authoring.angularDamping
-                    });
-                }
-                else
-                {
-                    // Create kinematic body (moved by code, not physics)
-                    AddComponent(entity, PhysicsMass.CreateKinematic(
-                        colliderBlob.Value.MassProperties));
-                }
-            }
-
-            private BlobAssetReference<Unity.Physics.Collider> CreateSingleCollider(
-                AgentPhysicsAuthoring authoring, CollisionFilter filter, Unity.Physics.Material material)
-            {
                 switch (authoring.colliderType)
                 {
                     case ColliderType.Sphere:
-                        return Unity.Physics.SphereCollider.Create(
+                        colliderBlob = Unity.Physics.SphereCollider.Create(
                             new SphereGeometry
                             {
                                 Center = float3.zero,
@@ -189,9 +108,10 @@ namespace FlowFieldPathfinding
                             },
                             filter,
                             material);
+                        break;
 
                     case ColliderType.Capsule:
-                        return Unity.Physics.CapsuleCollider.Create(
+                        colliderBlob = Unity.Physics.CapsuleCollider.Create(
                             new CapsuleGeometry
                             {
                                 Vertex0 = new float3(0, -authoring.size.y * 0.5f + authoring.radius, 0),
@@ -200,10 +120,11 @@ namespace FlowFieldPathfinding
                             },
                             filter,
                             material);
+                        break;
 
                     case ColliderType.Box:
                     default:
-                        return Unity.Physics.BoxCollider.Create(
+                        colliderBlob = Unity.Physics.BoxCollider.Create(
                             new BoxGeometry
                             {
                                 Center = float3.zero,
@@ -213,9 +134,10 @@ namespace FlowFieldPathfinding
                             },
                             filter,
                             material);
+                        break;
                 }
-            }
 
+<<<<<<< Updated upstream
             private BlobAssetReference<Unity.Physics.Collider> CreateCompositeCollider(
                 AgentPhysicsAuthoring authoring, CollisionFilter filter, Unity.Physics.Material material)
             {
@@ -224,15 +146,18 @@ namespace FlowFieldPathfinding
                 authoring.GetComponentsInChildren<UnityEngine.Collider>(childColliders);
 
                 if (childColliders.Count == 0)
+=======
+                // Add physics collider component
+                AddComponent(entity, new PhysicsCollider
+>>>>>>> Stashed changes
                 {
-                    // No child colliders found, create default single collider
-                    UnityEngine.Debug.LogWarning($"[AgentPhysicsAuthoring] useComposite is true but no child colliders found on {authoring.name}. Creating single collider instead.");
-                    return CreateSingleCollider(authoring, filter, material);
-                }
+                    Value = colliderBlob
+                });
 
-                // Create list of child collider blobs
-                var children = new System.Collections.Generic.List<CompoundCollider.ColliderBlobInstance>();
+                // Add physics velocity for dynamic bodies (kinematic agents)
+                AddComponent(entity, new PhysicsVelocity());
 
+<<<<<<< Updated upstream
                 foreach (var childCollider in childColliders)
                 {
                     // Skip if disabled or on the authoring GameObject itself (to avoid conflicts with Unity's built-in bakers)
@@ -341,6 +266,12 @@ namespace FlowFieldPathfinding
                 }
 
                 return compoundCollider;
+=======
+                // Add mass properties for physics simulation
+                // Using infinite mass makes this a kinematic body (moved by code, not physics)
+                AddComponent(entity, PhysicsMass.CreateKinematic(
+                    MassProperties.UnitSphere));
+>>>>>>> Stashed changes
             }
         }
     }
