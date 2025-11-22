@@ -138,6 +138,7 @@ namespace FlowFieldPathfinding
                 }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
             private BlobAssetReference<Unity.Physics.Collider> CreateCompositeCollider(
                 AgentPhysicsAuthoring authoring, CollisionFilter filter, Unity.Physics.Material material)
             {
@@ -150,6 +151,10 @@ namespace FlowFieldPathfinding
                 // Add physics collider component
                 AddComponent(entity, new PhysicsCollider
 >>>>>>> Stashed changes
+=======
+                // Add physics collider component
+                AddComponent(entity, new PhysicsCollider
+>>>>>>> Stashed changes
                 {
                     Value = colliderBlob
                 });
@@ -157,6 +162,7 @@ namespace FlowFieldPathfinding
                 // Add physics velocity for dynamic bodies (kinematic agents)
                 AddComponent(entity, new PhysicsVelocity());
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
                 foreach (var childCollider in childColliders)
                 {
@@ -267,10 +273,15 @@ namespace FlowFieldPathfinding
 
                 return compoundCollider;
 =======
+=======
+>>>>>>> Stashed changes
                 // Add mass properties for physics simulation
                 // Using infinite mass makes this a kinematic body (moved by code, not physics)
                 AddComponent(entity, PhysicsMass.CreateKinematic(
                     MassProperties.UnitSphere));
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
             }
         }
