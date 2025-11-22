@@ -73,6 +73,7 @@
     <Analyzer Include="D:\Work\UnityProjects\FlowFieldPathFinding\Library\PackageCache\com.unity.entities@42c4e852ffb4\Unity.Entities\SourceGenerators\Unity.Entities.Analyzer.CodeFixes.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Editor\ShadowCastingManagerEditor.cs" />
     <Compile Include="Assets\3D Characters Zombie City Streets Lowpoly Pack - Lite\Editor\RateAssetPopup.cs" />
     <Compile Include="Assets\Scripts\Editor\AgentPhysicsConverter.cs" />
   </ItemGroup>

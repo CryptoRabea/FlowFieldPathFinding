@@ -79,8 +79,8 @@
     <Compile Include="Assets\Scripts\FlowFieldGenerationSystem.cs" />
     <Compile Include="Assets\Scripts\AgentMovementSystem.cs" />
     <Compile Include="Assets\Scripts\PhysicsOptimizer.cs" />
-    <Compile Include="Assets\Scripts\ShadowCastingManagerEditor.cs" />
     <Compile Include="Assets\Scripts\AgentRigidbodyOptimizer.cs" />
+    <Compile Include="Assets\ClickToMoveNewInput.cs" />
     <Compile Include="Assets\Scripts\FlowFieldComponents.cs" />
     <Compile Include="Assets\Scripts\AgentRenderingAuthoring.cs" />
     <Compile Include="Assets\Scripts\FlowFieldVisualization.cs" />
