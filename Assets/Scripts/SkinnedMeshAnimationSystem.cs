@@ -1,6 +1,7 @@
 using Unity.Entities;
 using Unity.Transforms;
 using UnityEngine;
+using FlowFieldPathfinding;
 
 /// <summary>
 /// SKINNED MESH ANIMATION SYSTEM FOR DOTS
@@ -31,7 +32,7 @@ using UnityEngine;
 
 /// <summary>
 /// System that synchronizes skinned mesh GameObjects with their entity positions
-/// and manages animation playback.
+/// and manages animation playback based on velocity.
 /// Runs on main thread since it accesses managed components (Animator/GameObject).
 /// </summary>
 [UpdateInGroup(typeof(PresentationSystemGroup))]
@@ -40,8 +41,10 @@ public partial class SkinnedMeshAnimationSystem : SystemBase
     protected override void OnUpdate()
     {
         // Sync position and handle animation for each skinned mesh entity
-        foreach (var (localTransform, animation, meshRef) in
-            SystemAPI.Query<RefRO<LocalTransform>, RefRW<SkinnedMeshAnimation>, SkinnedMeshReference>())
+        foreach (var (localTransform, animation, meshRef, velocity, entity) in
+            SystemAPI.Query<RefRO<LocalTransform>, RefRW<SkinnedMeshAnimation>, SkinnedMeshReference, RefRO<AgentVelocity>>()
+            .WithAll<AgentActive>()
+            .WithEntityAccess())
         {
             if (meshRef.Animator == null)
                 continue;
@@ -64,13 +67,42 @@ public partial class SkinnedMeshAnimationSystem : SystemBase
             // Update animation speed
             meshRef.Animator.speed = animation.ValueRO.AnimationSpeed;
 
-            // Play default animation if not already playing something
-            if (animation.ValueRW.CurrentStateHash == 0)
+            // Determine desired animation state based on velocity and attack state
+            int desiredStateHash = DetermineAnimationState(velocity.ValueRO, animation.ValueRO, entity);
+
+            // Only change animation if state has changed
+            if (animation.ValueRW.CurrentStateHash != desiredStateHash)
             {
-                animation.ValueRW.CurrentStateHash = animation.ValueRO.DefaultStateHash;
+                animation.ValueRW.CurrentStateHash = desiredStateHash;
                 // Play on layer 0 (first/base layer)
-                meshRef.Animator.Play(animation.ValueRO.DefaultStateHash, 0);
+                meshRef.Animator.Play(desiredStateHash, 0);
             }
+        }
+    }
+
+    private int DetermineAnimationState(AgentVelocity velocity, SkinnedMeshAnimation animation, Entity entity)
+    {
+        // Check if entity has attack component and it's active
+        if (EntityManager.HasComponent<AgentAttack>(entity))
+        {
+            var attack = EntityManager.GetComponentData<AgentAttack>(entity);
+            if (attack.IsAttacking && attack.AttackTimer > 0)
+            {
+                return animation.AttackStateHash;
+            }
+        }
+
+        // Calculate horizontal speed (XZ plane)
+        float speed = Unity.Mathematics.math.length(new Unity.Mathematics.float2(velocity.Value.x, velocity.Value.z));
+
+        // Switch between Idle and Walk based on speed threshold
+        if (speed > animation.WalkSpeedThreshold)
+        {
+            return animation.WalkStateHash;
+        }
+        else
+        {
+            return animation.IdleStateHash;
         }
     }
 }
@@ -180,5 +212,35 @@ public partial class SkinnedMeshCleanupSystem : SystemBase
         // Unity automatically handles cleanup of managed components when entities are destroyed
         // The RuntimeInstance GameObjects will be garbage collected
         // For explicit cleanup, we would need to implement ICleanupComponentData or use EndSimulationEntityCommandBufferSystem
+    }
+}
+
+/// <summary>
+/// System to update attack timers and manage attack state.
+/// Automatically decrements attack timers and disables IsAttacking when timer expires.
+/// </summary>
+[UpdateInGroup(typeof(SimulationSystemGroup))]
+[UpdateBefore(typeof(AgentMovementSystem))]
+public partial class AgentAttackSystem : SystemBase
+{
+    protected override void OnUpdate()
+    {
+        float deltaTime = SystemAPI.Time.DeltaTime;
+
+        // Update attack timers
+        foreach (var attack in SystemAPI.Query<RefRW<AgentAttack>>())
+        {
+            if (attack.ValueRO.IsAttacking && attack.ValueRO.AttackTimer > 0)
+            {
+                attack.ValueRW.AttackTimer -= deltaTime;
+
+                // End attack when timer expires
+                if (attack.ValueRO.AttackTimer <= 0)
+                {
+                    attack.ValueRW.IsAttacking = false;
+                    attack.ValueRW.AttackTimer = 0;
+                }
+            }
+        }
     }
 }

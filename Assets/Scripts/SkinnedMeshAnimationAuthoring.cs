@@ -12,11 +12,20 @@ public class SkinnedMeshAnimationAuthoring : MonoBehaviour
     [Tooltip("The Animator component (auto-detected if not set)")]
     public Animator animator;
 
-    [Tooltip("Default animation state name to play")]
-    public string defaultAnimationState = "Idle";
+    [Tooltip("Idle animation state name")]
+    public string idleAnimationState = "Idle";
+
+    [Tooltip("Walk/Run animation state name")]
+    public string walkAnimationState = "Walk";
+
+    [Tooltip("Attack animation state name")]
+    public string attackAnimationState = "Attack";
 
     [Tooltip("Animation speed multiplier")]
     public float animationSpeed = 1f;
+
+    [Tooltip("Minimum speed to trigger walk animation")]
+    public float walkSpeedThreshold = 0.1f;
 
     class Baker : Baker<SkinnedMeshAnimationAuthoring>
     {
@@ -28,7 +37,11 @@ public class SkinnedMeshAnimationAuthoring : MonoBehaviour
             AddComponent(entity, new SkinnedMeshAnimation
             {
                 AnimationSpeed = authoring.animationSpeed,
-                DefaultStateHash = Animator.StringToHash(authoring.defaultAnimationState)
+                IdleStateHash = Animator.StringToHash(authoring.idleAnimationState),
+                WalkStateHash = Animator.StringToHash(authoring.walkAnimationState),
+                AttackStateHash = Animator.StringToHash(authoring.attackAnimationState),
+                CurrentStateHash = 0, // Will be set by the system
+                WalkSpeedThreshold = authoring.walkSpeedThreshold
             });
 
             // Add managed component reference to keep the GameObject alive
@@ -52,9 +65,14 @@ public class SkinnedMeshAnimationAuthoring : MonoBehaviour
 public struct SkinnedMeshAnimation : IComponentData
 {
     public float AnimationSpeed;
-    public int DefaultStateHash;
+    public int IdleStateHash;
+    public int WalkStateHash;
+    public int AttackStateHash;
     public int CurrentStateHash;
     public float NormalizedTime;
+
+    // Animation state thresholds
+    public float WalkSpeedThreshold;  // Minimum speed to trigger walk animation
 }
 
 /// <summary>

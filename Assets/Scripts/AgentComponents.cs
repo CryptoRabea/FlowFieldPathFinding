@@ -61,4 +61,20 @@ namespace FlowFieldPathfinding
         /// <summary>Squared distance to main camera (avoids sqrt)</summary>
         public float Value;
     }
+
+    /// <summary>
+    /// Optional component for attack state.
+    /// Add this component to enable attack animations.
+    /// </summary>
+    public struct AgentAttack : IComponentData
+    {
+        /// <summary>Whether the agent is currently attacking</summary>
+        public bool IsAttacking;
+
+        /// <summary>Time remaining for current attack animation</summary>
+        public float AttackTimer;
+
+        /// <summary>Attack duration in seconds</summary>
+        public float AttackDuration;
+    }
 }
