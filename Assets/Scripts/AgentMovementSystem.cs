@@ -38,6 +38,7 @@ namespace FlowFieldPathfinding
         private const float AVOIDANCE_RADIUS = 2.0f;  // Increased for better separation
         private const float COHESION_RADIUS = 5.0f;   // Larger radius for swarm grouping
         private const float SPATIAL_CELL_SIZE = 5.0f; // Match cohesion radius for optimal hashing
+        private const float ROTATION_SMOOTHING = 10.0f; // Rotation smoothing speed (higher = faster rotation)
 
         public void OnCreate(ref SystemState state)
         {
@@ -120,7 +121,8 @@ namespace FlowFieldPathfinding
 
             var applyPhysicsMovementJob = new ApplyPhysicsMovementJob
             {
-                DeltaTime = deltaTime
+                DeltaTime = deltaTime,
+                RotationSmoothSpeed = ROTATION_SMOOTHING
             };
             var physicsHandle = applyPhysicsMovementJob.ScheduleParallel(physicsQuery, velocityHandle);
 
@@ -132,7 +134,8 @@ namespace FlowFieldPathfinding
 
             var applyKinematicMovementJob = new ApplyKinematicMovementJob
             {
-                DeltaTime = deltaTime
+                DeltaTime = deltaTime,
+                RotationSmoothSpeed = ROTATION_SMOOTHING
             };
             var kinematicHandle = applyKinematicMovementJob.ScheduleParallel(kinematicQuery, velocityHandle);
 
@@ -264,6 +267,16 @@ namespace FlowFieldPathfinding
                     agent.CohesionWeight * agent.Speed * cohesion +
                     0.1f * agent.Speed * randomOffset; // Small random component
 
+                // If desired velocity is near zero and flow direction is zero, maintain current velocity to prevent stopping
+                if (math.lengthsq(desiredVelocity) < 0.01f && math.lengthsq(flowDirection3D) < 0.01f)
+                {
+                    // Keep moving in current direction at reduced speed when flow field is invalid
+                    if (math.lengthsq(velocity.Value) > 0.01f)
+                    {
+                        desiredVelocity = math.normalize(velocity.Value) * agent.Speed * 0.5f;
+                    }
+                }
+
                 // Smooth velocity change for natural movement
                 float3 newVelocity = math.lerp(velocity.Value, desiredVelocity, DeltaTime * 4.0f);
 
@@ -373,6 +386,7 @@ namespace FlowFieldPathfinding
         private partial struct ApplyPhysicsMovementJob : IJobEntity
         {
             public float DeltaTime;
+            public float RotationSmoothSpeed;
 
             public void Execute(
                 ref PhysicsVelocity physicsVelocity,
@@ -388,12 +402,15 @@ namespace FlowFieldPathfinding
                     // Keep Y velocity from physics (gravity, collisions)
                     physicsVelocity.Linear = new float3(velocity.Value.x, physicsVelocity.Linear.y, velocity.Value.z);
 
-                    // Update rotation to face movement direction (XZ plane only)
+                    // Update rotation to face movement direction (XZ plane only) with smooth interpolation
                     float2 horizontalVel = new float2(velocity.Value.x, velocity.Value.z);
                     if (math.lengthsq(horizontalVel) > 0.01f)
                     {
                         float3 forward = math.normalize(new float3(horizontalVel.x, 0, horizontalVel.y));
-                        transform.Rotation = quaternion.LookRotationSafe(forward, math.up());
+                        quaternion targetRotation = quaternion.LookRotationSafe(forward, math.up());
+
+                        // Smooth rotation using slerp to prevent glitching
+                        transform.Rotation = math.slerp(transform.Rotation, targetRotation, DeltaTime * RotationSmoothSpeed);
                     }
                 }
             }
@@ -407,6 +424,7 @@ namespace FlowFieldPathfinding
         private partial struct ApplyKinematicMovementJob : IJobEntity
         {
             public float DeltaTime;
+            public float RotationSmoothSpeed;
 
             public void Execute(
                 ref LocalTransform transform,
@@ -417,11 +435,14 @@ namespace FlowFieldPathfinding
                 // Update position directly
                 transform.Position += velocity.Value * DeltaTime;
 
-                // Update rotation to face movement direction
+                // Update rotation to face movement direction with smooth interpolation
                 if (math.lengthsq(velocity.Value) > 0.01f)
                 {
                     float3 forward = math.normalize(velocity.Value);
-                    transform.Rotation = quaternion.LookRotationSafe(forward, math.up());
+                    quaternion targetRotation = quaternion.LookRotationSafe(forward, math.up());
+
+                    // Smooth rotation using slerp to prevent glitching
+                    transform.Rotation = math.slerp(transform.Rotation, targetRotation, DeltaTime * RotationSmoothSpeed);
                 }
             }
         }

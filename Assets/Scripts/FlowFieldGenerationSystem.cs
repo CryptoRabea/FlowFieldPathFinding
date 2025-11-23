@@ -22,13 +22,13 @@ namespace FlowFieldPathfinding
     {
         private Entity _flowFieldEntity;
         private bool _initialized;
-        private bool _firstRegeneration; // Flag to force first regeneration
         private float3 _lastTargetPosition;
         private double _lastRegenerationTime;
 
-        // Throttling settings
-        private const float MIN_TARGET_MOVE_DISTANCE = 2.0f; // Only regenerate if target moved this far (in world units)
-        private const float MIN_REGENERATION_INTERVAL = 0.2f; // Minimum time between regenerations (in seconds)
+        // Throttling settings - reduced for more responsive target following
+        private const float MIN_TARGET_MOVE_DISTANCE = 0.5f; // Only regenerate if target moved this far (in world units)
+        private const float MIN_REGENERATION_INTERVAL = 0.1f; // Minimum time between regenerations (in seconds)
+        private const float MAX_REGENERATION_INTERVAL = 0.3f; // Force regeneration after this time even if distance threshold not met
 
         public void OnCreate(ref SystemState state)
         {
@@ -46,8 +46,7 @@ namespace FlowFieldPathfinding
             {
                 InitializeFlowFieldEntity(ref state, config);
                 _lastTargetPosition = target.Position;
-                _lastRegenerationTime = SystemAPI.Time.ElapsedTime;
-                _firstRegeneration = true; // Force first regeneration
+                _lastRegenerationTime = SystemAPI.Time.ElapsedTime - MAX_REGENERATION_INTERVAL; // Ensure first regen happens immediately
                 _initialized = true;
             }
 
@@ -55,34 +54,26 @@ namespace FlowFieldPathfinding
             if (!target.HasChanged)
                 return;
 
-            // Always regenerate on first target change after initialization
-            if (_firstRegeneration)
+            // Smart throttling: Check if target moved far enough or enough time passed
+            float distanceMoved = math.distance(target.Position, _lastTargetPosition);
+            double timeSinceLastRegen = SystemAPI.Time.ElapsedTime - _lastRegenerationTime;
+
+            // Regenerate if: 1) moved beyond distance threshold, 2) enough time passed, or 3) minimum interval elapsed
+            bool shouldRegenerate = distanceMoved >= MIN_TARGET_MOVE_DISTANCE ||
+                                   timeSinceLastRegen >= MAX_REGENERATION_INTERVAL ||
+                                   timeSinceLastRegen >= MIN_REGENERATION_INTERVAL;
+
+            if (!shouldRegenerate)
             {
-                _firstRegeneration = false;
-                _lastTargetPosition = target.Position;
-                _lastRegenerationTime = SystemAPI.Time.ElapsedTime;
+                // Skip regeneration, but still reset the flag
+                target.HasChanged = false;
+                SystemAPI.SetSingleton(target);
+                return;
             }
-            else
-            {
-                // Throttling: Check if target moved far enough or enough time passed
-                float distanceMoved = math.distance(target.Position, _lastTargetPosition);
-                double timeSinceLastRegen = SystemAPI.Time.ElapsedTime - _lastRegenerationTime;
 
-                bool shouldRegenerate = distanceMoved >= MIN_TARGET_MOVE_DISTANCE ||
-                                       timeSinceLastRegen >= MIN_REGENERATION_INTERVAL * 5.0; // Force regen after 1 second
-
-                if (!shouldRegenerate)
-                {
-                    // Skip regeneration, but still reset the flag
-                    target.HasChanged = false;
-                    SystemAPI.SetSingleton(target);
-                    return;
-                }
-
-                // Update tracking variables
-                _lastTargetPosition = target.Position;
-                _lastRegenerationTime = SystemAPI.Time.ElapsedTime;
-            }
+            // Update tracking variables
+            _lastTargetPosition = target.Position;
+            _lastRegenerationTime = SystemAPI.Time.ElapsedTime;
 
             // Reset the changed flag
             target.HasChanged = false;
