@@ -84,6 +84,7 @@
     <Compile Include="Assets\Scripts\FlowFieldComponents.cs" />
     <Compile Include="Assets\Scripts\AgentRenderingAuthoring.cs" />
     <Compile Include="Assets\Scripts\FlowFieldVisualization.cs" />
+    <Compile Include="Assets\Scripts\Camera\FreeFlyEditorStyleCamera.cs" />
     <Compile Include="Assets\Scripts\SkinnedMeshAnimationSystem.cs" />
     <Compile Include="Assets\FPSCounter.cs" />
     <Compile Include="Assets\Scripts\FlowFieldObstacleAuthoring.cs" />
@@ -95,9 +96,10 @@
     <Compile Include="Assets\Scripts\AgentComponents.cs" />
     <Compile Include="Assets\Scripts\AgentSpawnerConfigAuthoring.cs" />
     <Compile Include="Assets\Scripts\PlayerMovement.cs" />
-    <Compile Include="Assets\Scripts\RTSCameraController.cs" />
+    <Compile Include="Assets\Scripts\Camera\RTSCameraController.cs" />
     <Compile Include="Assets\Scripts\AgentPhysicsAuthoring.cs" />
     <Compile Include="Assets\Scripts\PerformanceMonitor.cs" />
+    <Compile Include="Assets\Scripts\Camera\CameraModeToggle.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\ArtStore3D\Zombie Cartoon\Readme.txt" />

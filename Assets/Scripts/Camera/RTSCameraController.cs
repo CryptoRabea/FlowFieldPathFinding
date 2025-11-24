@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-[RequireComponent(typeof(Camera))]
 public class RTSCameraController : MonoBehaviour
 {
     [Header("Movement")]
@@ -22,10 +21,13 @@ public class RTSCameraController : MonoBehaviour
 
     [Header("Rotation")]
     public float rotationSpeed = 60f; // degrees per second
-    private float initialRotation; // Store initial Y rotation for reset
+    private float initialRotationX; // Store initial Y rotation for reset
+    private float initialRotationY; // Store initial Y rotation for reset
+    private float initialRotationZ; // Store initial Y rotation for reset
 
     private Camera cam;
     private Vector2 moveInput;
+    private Vector2 moveUpDown;
     private float zoomInput;
     private float rotationInput;
     private bool isSprinting = false;
@@ -44,9 +46,11 @@ public class RTSCameraController : MonoBehaviour
         inputActions = new InputSystem_Actions();
 
         // Store initial rotation
-        initialRotation = transform.eulerAngles.y;
+        initialRotationX = transform.eulerAngles.x;
+        initialRotationY = transform.eulerAngles.y;
+        initialRotationZ = transform.eulerAngles.z;
 
-        // WASD / Arrow movement
+        // WASD / Arrow movement on the x , z axis 
         inputActions.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
         inputActions.Player.Move.canceled += ctx => moveInput = Vector2.zero;
 
@@ -61,6 +65,10 @@ public class RTSCameraController : MonoBehaviour
         // Sprint (Shift)
         inputActions.Player.Sprint.performed += ctx => isSprinting = true;
         inputActions.Player.Sprint.canceled += ctx => isSprinting = false;
+
+        // Rotation (Z / C)  movement on the y,axis 
+        inputActions.Player.MoveUpDown.performed += ctx => moveUpDown = ctx.ReadValue<Vector2>();
+        inputActions.Player.MoveUpDown.canceled += ctx => moveUpDown = Vector2.zero;
     }
 
     private void OnEnable() => inputActions.Enable();
@@ -77,23 +85,26 @@ public class RTSCameraController : MonoBehaviour
 
     private void HandleMovement()
     {
-        Vector3 dir = new Vector3(moveInput.x, 0, moveInput.y);
+        Vector3 dirXZ = new Vector3(moveInput.x, 0, moveInput.y);
+        Vector3 dirY = new(0, moveUpDown.y, 0);
 
         // Edge scrolling
         if (useEdgeScroll && Mouse.current != null)
         {
             Vector2 mousePos = Mouse.current.position.ReadValue();
-            if (mousePos.y >= Screen.height - panBorderThickness) dir.z += 1;
-            if (mousePos.y <= panBorderThickness) dir.z -= 1;
-            if (mousePos.x >= Screen.width - panBorderThickness) dir.x += 1;
-            if (mousePos.x <= panBorderThickness) dir.x -= 1;
+            if (mousePos.y >= Screen.height - panBorderThickness) dirXZ.z += 1;
+            if (mousePos.y <= panBorderThickness) dirXZ.z -= 1;
+            if (mousePos.x >= Screen.width - panBorderThickness) dirXZ.x += 1;
+            if (mousePos.x <= panBorderThickness) dirXZ.x -= 1;
         }
 
         // Apply sprint multiplier when shift is held
         float currentSpeed = isSprinting ? moveSpeed * sprintMultiplier : moveSpeed;
 
-        Vector3 movement = Quaternion.Euler(0, transform.eulerAngles.y, 0) * dir.normalized * currentSpeed * Time.deltaTime;
-        transform.position += movement;
+        Vector3 movementXZ = Quaternion.Euler(0, transform.eulerAngles.y, 0) * dirXZ.normalized * currentSpeed * Time.deltaTime;
+        transform.position += movementXZ;
+        Vector3 movementY = Quaternion.Euler(0, transform.eulerAngles.y, 0) * dirY.normalized * currentSpeed * Time.deltaTime;
+        transform.position += movementY;
 
         // Clamp position
         transform.position = new Vector3(
@@ -135,17 +146,28 @@ public class RTSCameraController : MonoBehaviour
             else
             {
                 // Continuous rotation when just Q or E is held (without Shift)
-                float rotation = 0f;
+                float rotationRightLeft = 0f;
+                float rotationUpDown = 0f;
 
                 if (Keyboard.current.qKey.isPressed)
-                    rotation -= 1f; // Rotate left (counter-clockwise)
+                    rotationRightLeft -= 1f; // Rotate left (counter-clockwise)
 
                 if (Keyboard.current.eKey.isPressed)
-                    rotation += 1f; // Rotate right (clockwise)
+                    rotationRightLeft += 1f; // Rotate right (clockwise)
 
-                if (Mathf.Abs(rotation) > 0.01f)
+                if (Keyboard.current.rKey.isPressed)
+                    rotationUpDown -= 1f; // Rotate up 
+
+                if (Keyboard.current.vKey.isPressed)
+                    rotationUpDown += 1f; // Rotate down 
+
+                if (Mathf.Abs(rotationRightLeft) > 0.01f)
                 {
-                    transform.Rotate(Vector3.up, rotation * rotationSpeed * Time.deltaTime, Space.World);
+                    transform.Rotate(Vector3.up, rotationRightLeft * rotationSpeed * Time.deltaTime, Space.World);
+                }
+                if (Mathf.Abs(rotationUpDown) > 0.01f)
+                {
+                    transform.Rotate(Vector3.right, rotationUpDown * rotationSpeed * Time.deltaTime, Space.Self);
                 }
             }
 
@@ -153,7 +175,7 @@ public class RTSCameraController : MonoBehaviour
             if (Keyboard.current.spaceKey.wasPressedThisFrame)
             {
                 Vector3 currentEuler = transform.eulerAngles;
-                transform.eulerAngles = new Vector3(currentEuler.x, initialRotation, currentEuler.z);
+                transform.eulerAngles = new(initialRotationX, initialRotationY, initialRotationZ);
             }
         }
     }
@@ -187,7 +209,7 @@ public class RTSCameraController : MonoBehaviour
             forward.y = 0; // Keep movement horizontal
             forward.Normalize();
 
-            Vector3 move = (right * delta.x + forward * delta.y) * dragSpeed * Time.deltaTime;
+            Vector3 move = dragSpeed * Time.deltaTime * (right * delta.x + forward * delta.y);
             transform.position += move;
         }
 

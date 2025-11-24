@@ -35,7 +35,7 @@ namespace FlowFieldPathfinding
 
         [Header("Manual Target Position")]
         [Tooltip("Manual target position (used when targetObject is not assigned)")]
-        public Vector3 targetPosition = new Vector3(50, 0, 50);
+        public Vector3 targetPosition = new(50, 0, 50);
 
         [Tooltip("Update target when manual position field changes")]
         public bool updateTargetOnChange = true;
@@ -367,7 +367,7 @@ namespace FlowFieldPathfinding
                         continue;
 
                     // Calculate cell center
-                    float3 cellCenter = new float3(
+                    float3 cellCenter = new(
                         flowFieldData.GridOrigin.x + (x + 0.5f) * flowFieldData.CellSize,
                         flowFieldData.GridOrigin.y + 0.5f,
                         flowFieldData.GridOrigin.z + (y + 0.5f) * flowFieldData.CellSize
@@ -464,7 +464,7 @@ namespace FlowFieldPathfinding
 
             if (Event.current.type == EventType.KeyDown)
             {
-                if (Event.current.keyCode == KeyCode.Space)
+                if (Event.current.keyCode == KeyCode.LeftControl)
                 {
                     SpawnAgents();
                 }
